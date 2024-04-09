@@ -7,10 +7,12 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import MinMaxScaler
 
-# title
-st.markdown("<h1 style='text-align: left;'>Welcome to Matched Markets Testing Beta 👋</h1>", unsafe_allow_html=True)
-st.header("")
+# page config
+st.set_page_config(page_title=None, page_icon=None, layout="wide", initial_sidebar_state="auto", menu_items=None)
 
+# title
+st.markdown("<h1 style='text-align: left;'>Welcome to the Matched Market Testing Suite Beta 👋</h1>", unsafe_allow_html=True)
+st.header("")
 
 # load data
 # load & process standard data
@@ -40,26 +42,36 @@ tab1, tab2, tab3, tab4 = st.tabs(["Instructions", "Data Uploader", "Market Prior
 # tab1: instructions
 with tab1:
     st.write(f"""
-    The Matched Market Testing suite is built to create effective market testing strategy for brands. Leveraging 
-    modern AI and machine learning technologies, it examines the relationship between business KPIs and demographic, 
-    economic and media factors, and returns the leading factors and how much each factor contributes the business KPI.
-    It offers two core functionalities, as described below. 
+    The Matched Market Testing suite (MMT) is built to create effective market testing strategy for brands and 
+    advertisers. Leveraging modern AI and machine learning technologies, it learns the relationship between business 
+    KPIs and demographic, economic and media factors, and determines what the leading factors are and how much each 
+    factor contributes to the business KPI. Currently, MMT offers two core functionalities, as described below. 
     
-    * Market Prioritization Tool
-    * Matched Markets Tool
+        * Market Prioritization Tool: Leveraging factor weights returned by the machine learning model, it provides a 
+          market ranking that can used to prioritize markets for media testing and market expansion purposes.  
+        
+        * Matched Markets Tool: Leveraging market ranking and factor weights, it provides matched market pairs that can 
+          be used for media testing and uplift modeling. 
     
-    It has the following features to support different use cases.
-    1. Flexible KPI
-    2. Multiple KPI support
-    3. Multiple data sources 
+    Features of the Matched Market Testing suite
     
-    Quick Start
-    * KPI Template
-    * Audience Template 
+        * Multiple market levels: MMT supports analysis at Country and US DMA levels
+        * Flexible KPIs: MMT supports both numeric KPIs (e.g., sales volume) and non-numeric KPIs (e.g., Brand Equity - Low/Medium/High)
+        * Multiple KPIs: MMT supports market ranking and paring using different business KPIs 
+        * Multiple data sources: MMT can ingest 1st and 3rd-party data from brands and advertisers for more powerful insights
+    
+    Case Studies
+    
+        1. Market prioritization for an European online fashion retailer (Primary Business KPI: Brand Equity)
+        2. Market prioritization for a global investment fund (Primary Business KPI: Not defined)
+        3. Matched markets design for a fashion brand in the U.S. markets (Primary Business KPI: Sales Amount)
     """)
 
 # tab 2: data uploader
 with tab2:
+    st.write("TODO: Add links to data templates")
+    st.write("If you have any questions about the KPI or Audience data required, please reach out to Media Analytics "
+             "team at MediaAnalytics@mediamonks.com")
     # kpi data
     kpi_df = None
     uploaded_file_kpi = st.file_uploader("Upload your KPI data")
@@ -68,7 +80,7 @@ with tab2:
         kpi_df = pd.read_csv(uploaded_file_kpi)
         if len(kpi_df) > 0:
             st.success(f"Successfully loaded KPI data. Rows = {len(kpi_df)}. A snapshot is provided below. ")
-            st.dataframe(kpi_df.head(), hide_index=True)
+            st.dataframe(kpi_df, hide_index=True)
 
     # audience data
     audience_df = None
@@ -78,10 +90,11 @@ with tab2:
         audience_df = pd.read_csv(uploaded_file_audience)
         if len(audience_df) > 0:
             st.success(f"Successfully loaded audience data. Rows = {len(audience_df)}. A snapshot is provided below.")
-            st.dataframe(audience_df.head(), hide_index=True)
+            st.dataframe(audience_df, hide_index=True)
 
 # tab 3: market prioritization
 with tab3:
+    st.subheader("Market Prioritization")
     # kpi selection
     agg_kpi_df = None
     if kpi_df is not None and audience_df is not None:
@@ -118,7 +131,7 @@ with tab3:
             st.dataframe(df, hide_index=True)
 
             # run RF to calculate weights
-            with st.spinner(text="Running ML model for factor weights..."):
+            with st.spinner(text="Running ML model to calculate factor weights..."):
                 target = 'KPI_TIER'
                 # assuming first two columns are market code and name
                 model_columns = standard_columns[3 : ] + audience_columns
@@ -150,8 +163,8 @@ with tab3:
                 feature_names = X.columns
                 feature_weights = best_model.feature_importances_
 
-                fi = pd.DataFrame({'feature': feature_names, 'score': feature_weights}).sort_values(by=['score'], ascending=False)
-                fi['cumulative_score'] = fi['score'].cumsum()
+                fi = pd.DataFrame({'FEATURE': feature_names, 'WEIGHT': feature_weights}).sort_values(by=['WEIGHT'], ascending=False)
+                fi['CUMULATIVE WEIGHTS'] = fi['WEIGHT'].cumsum()
 
                 # calculate scores
                 score_df = df[model_columns].copy()
@@ -161,11 +174,11 @@ with tab3:
                 scores = np.matmul(X_norm, feature_weights)
 
                 ranking_df = pd.DataFrame(X_norm, columns=model_columns)
-                ranking_df['Score'] = list(scores)
+                ranking_df['SCORE'] = list(scores)
 
                 display_columns = standard_columns[0 : 2] + [kpi_column, 'KPI_TIER']
                 ranking_df = pd.concat([df[display_columns], ranking_df], axis=1)
-                ranking_df = ranking_df.sort_values(by=['Score'], ascending=False).reset_index(drop=True)
+                ranking_df = ranking_df.sort_values(by=['SCORE'], ascending=False).reset_index(drop=True)
 
                 # update session state
                 st.session_state.ranking_df = ranking_df
@@ -173,15 +186,18 @@ with tab3:
                 st.session_state.feature_weights = feature_weights
 
             st.success("Successfully calculated factor weights")
+            st.subheader(f"Factor weights for {kpi_column}")
             st.dataframe(fi, hide_index=True)
+
+            st.subheader("Market ranking")
             st.dataframe(ranking_df, hide_index=True)
 
 # tab 4: matched markets
 with tab4:
     ranking_df = st.session_state.ranking_df
     if ranking_df is not None:
-        st.subheader("Matched Markets")
-        bt_run_matched_markets = st.button(label="Run Matched Markets")
+        st.subheader("Matched Market Design")
+        bt_run_matched_markets = st.button(label="Run Matched Market Design")
 
         if bt_run_matched_markets:
             test_markets = []
@@ -206,7 +222,15 @@ with tab4:
                 test_markets.append(market_tier[market_column][0])
                 control_markets.append(market_tier[market_column][best_match_index])
 
-            test = ranking_df[ranking_df[market_column].isin(test_markets)]
-            control = ranking_df[ranking_df[market_column].isin(control_markets)]
-            st.dataframe(test, hide_index=True)
-            st.dataframe(control, hide_index=True)
+            # mm_display_columns = list(ranking_df)[0 : 2] + ['KPI_TIER']
+            mm_display_columns = list(ranking_df)[0 : 4]
+            test_df = ranking_df[ranking_df[market_column].isin(test_markets)][mm_display_columns]
+            control_df = ranking_df[ranking_df[market_column].isin(control_markets)][mm_display_columns]
+            test_df.columns = [f'TEST_{i}' if i != 'KPI_TIER' else i for i in list(test_df)]
+            control_df.columns = [f'CONTROL_{i}' if i != 'KPI_TIER' else i for i in list(control_df)]
+            matched_markets_df = pd.merge(test_df, control_df, on=['KPI_TIER'], how='left').sort_values(by='KPI_TIER')
+            mm_display_columns = ['KPI_TIER'] + [i for i in list(matched_markets_df) if i != 'KPI_TIER']
+            matched_markets_df = matched_markets_df[mm_display_columns]
+
+            # display results
+            st.dataframe(matched_markets_df, hide_index=True)
