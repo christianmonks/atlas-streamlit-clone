@@ -73,10 +73,10 @@ with col2:
     **The Matched Market Testing Suite (MMT) is built to create effective market testing strategy for brands and 
     advertisers. Leveraging modern AI and machine learning technologies, it learns the relationship between business 
     KPIs and demographic, economic and media factors, and determines what the leading factors are and how much each 
-    factor contributes to the business KPI. Currently, MMT offers two core functionalities, as described below.** 
+    factor contributes to the business KPI.** 
     """)
     tab1, tab2, tab3, tab4 = st.tabs([
-        "**Instructions**", "**Data Uploader**", "**Market Scoring & Ranking**", "**Matched Markets**"
+        "**Instructions**", "**Data Uploader**", "**Market Ranking**", "**Matched Markets**"
     ])
 
 # tab1: instructions
@@ -111,7 +111,7 @@ with tab2:
             # Can be used wherever a "file-like" object is accepted:
             kpi_df = pd.read_csv(uploaded_file_kpi)
             if len(kpi_df) > 0:
-                st.success(f"Successfully loaded KPI data. Rows = {len(kpi_df)}. A snapshot is provided below. ")
+                st.success(f"Successfully loaded KPI Data. Rows = {len(kpi_df)}. A snapshot is provided below. ")
                 st.dataframe(kpi_df, hide_index=True)
 
     with col2:
@@ -126,7 +126,7 @@ with tab2:
         if uploaded_file_audience is not None:
             # Can be used wherever a "file-like" object is accepted:
             audience_df = pd.read_csv(uploaded_file_audience)
-            if (len(audience_df) > 0) & (len(audience_df) == len(kpi_df)):
+            if len(audience_df) > 0:
                 st.success(f"Successfully loaded audience data. Rows = {len(audience_df)}. A snapshot is provided below.")
                 st.dataframe(audience_df, hide_index=True)
 
@@ -187,7 +187,7 @@ with tab3:
                 st.dataframe(df, hide_index=True)
 
             bt_run_market_ranking = st.button(
-                label="Confirm and Run Market Scoring & Ranking"
+                label="Confirm and Run Market Ranking"
             )
 
             if bt_run_market_ranking:
@@ -255,10 +255,11 @@ with tab3:
                 st.success("Successfully Calculated Factor weights")
                 st.markdown("***")
                 st.markdown(f"<h3 style='text-align: left;'> Factor Weights for {kpi_column} </h3>", unsafe_allow_html=True)
-                col1, col2, col3 = st.columns([1, 3, 3], gap='small')
+                col1, col2, col3 = st.columns([3, 3, 1], gap='small')
                 display_df1 = fi[['FEATURE', 'WEIGHT']].rename(
                     columns={'FEATURE': 'Feature', 'WEIGHT': 'Weight'})
-                with col2:
+
+                with col1:
                      fig_feature_weights = px.pie(
                         display_df1,
                         values ='Weight',
@@ -269,7 +270,8 @@ with tab3:
                         height = 500,
                      )
                      st.plotly_chart(fig_feature_weights, theme='streamlit')
-                with col3:
+
+                with col2:
                     st.write("")
                     st.write("")
                     st.write("")
@@ -280,33 +282,39 @@ with tab3:
                     st.dataframe(display_df1, hide_index=True)
 
                 st.subheader("Market Rankings")
-                ranking_df['RANK'] = ranking_df['SCORE'].rank(ascending=False).astype(int)
+                ranking_df['Overall Rank'] = ranking_df['SCORE'].rank(ascending=False).astype(int)
+                ranking_df['Tier Ranking'] = ranking_df.groupby(['KPI_TIER'])['SCORE'].rank(ascending=False).astype(int)
 
-                col1, col2, col3 = st.columns([1, 3, 3], gap='medium')
-                with col2:
-                    fig1 = px.bar(ranking_df.head(10).sort_values(by='SCORE', ascending = True),
+                col1, col2, col3 = st.columns([3, 3, 1], gap='medium')
+                graph_col = [c for c in list(ranking_df) if 'NAME' in c][0]
+
+                with col1:
+                    fig1 = px.bar(
+                       ranking_df.head(10).sort_values(by='SCORE', ascending = True),
                          x='SCORE',
-                         y=market_column,
-                         title='Top 10 Markets',
+                         y=graph_col,
+                         title=f'Top 10  Markets',
                          orientation='h',  # horizontal bar chart
-                         labels={market_column: 'Market Rank', 'SCORE': 'Market Score'},
+                         labels={graph_col: 'Market Rank', 'SCORE': 'Market Score'},
                          width = 500,
                          height=500
                      )
                     st.plotly_chart(fig1, theme='streamlit')
-                with col3:
+
+                with col2:
                     st.write("")
                     st.write("")
                     st.write("")
-                    st.write("")
-                    with st.expander('Market Ranking DataFrame', expanded=False):
-                        st.dataframe(ranking_df, hide_index=True)
+                    with st.expander('Market Ranking Table', expanded=False):
+                        st.dataframe(ranking_df[[
+                            'KPI_TIER', graph_col, 'SCORE', 'Tier Ranking', 'Overall Rank'
+                        ]], hide_index=True)
 
 # tab 4: matched markets
 with tab4:
     ranking_df = st.session_state.ranking_df
     if ranking_df is None:
-        st.error('Please Return to the Previous Tab and Run Market Scoring', icon="🚨")
+        st.error('Please Return to the Previous Tab and Run Market Ranking', icon="🚨")
     else:
 
         test_markets = []
@@ -345,6 +353,6 @@ with tab4:
 
         col1, col2, col3 = st.columns([3,1,1])
         with col1:
-            st.markdown("***Matched Markets Based on Scoring ***")
+            st.write("**Matched Markets Based on Similarity Scoring**")
             display_df2 = matched_markets_df[mm_display_columns]
             st.dataframe(display_df2, hide_index=True)
