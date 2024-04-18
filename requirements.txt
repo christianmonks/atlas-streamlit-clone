@@ -1,3 +1,6 @@
+json
+numpy
+pandas
 streamlit
 scikit-learn
 plotly
