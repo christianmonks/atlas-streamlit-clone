@@ -1,3 +1,4 @@
+import json
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -9,18 +10,22 @@ from pandas.api.types import is_numeric_dtype
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import MinMaxScaler
+from plotly.offline import init_notebook_mode, iplot
 
-from scripts.utils import*
+from scripts.utils import *
+from scripts.constants import *
+from scripts.dma_plot import *
+from scripts.matched_market import MatchedMarketScoring, calculate_tier, generate_dma_data
 
-# page config
+# Page Config
 st.set_page_config(
     page_title=None, page_icon=None, layout="wide",
     initial_sidebar_state="auto", menu_items=None
 )
 
-# title
+# Add Title
 image = add_image()
-col1, col2, col3 = st.columns([1,.5,1])
+col1, col2, col3 = st.columns([1, .5, 1])
 with col1:
     st.write("")
 with col2:
@@ -28,55 +33,36 @@ with col2:
 with col3:
     st.write("")
 
-col1, col2, col3 = st.columns([1,3,1])
+col1, col2, col3 = st.columns([1, 3, 1])
 with col1:
     st.write("")
 with col2:
-    st.markdown("<h3 style='text-align: center;'> 👋  Welcome to Matched Market Testing Suite </h3>", unsafe_allow_html=True)
+    st.markdown(
+        "<h3 style='text-align: center;'> 👋  Welcome to Matched Market Testing Suite </h3>", unsafe_allow_html=True
+    )
 with col3:
     st.write("")
 
-# load & process standard data
+# Current working directory
 cd = os.getcwd()
-us_dma_df = pd.read_csv(join(cd, 'data', 'mmt_us_dma.csv'))
+# Read world country data
 world_country_df = pd.read_csv(join(cd, 'data', 'mmt_world_country.csv'))
-us_dma_df = us_dma_df[
-    (us_dma_df.MEDIAN_HOUSEHOLD_INCOME > 0) & (us_dma_df.MEDIAN_HOUSING_VALUE > 0) \
-    & (us_dma_df.GDP_PER_CAPITA > 0)
-].reset_index(drop=True)
-
-# constants
-standard_columns_us_dma = [
-    'DMA_CODE', 'DMA_NAME', 'UNIVERSE',
-    'GDP_PER_CAPITA', 'MEDIAN_HOUSEHOLD_INCOME',
-    'MEDIAN_HOUSING_VALUE', 'CPM'
-]
-
-standard_columns_world_country = [
-    'COUNTRY_CODE', 'COUNTRY_NAME',
-    'P18+', 'GDP_PER_CAPITA',
-    'MEDIAN_HOUSEHOLD_INCOME', 'CPM'
-]
 
 # initialize session state
-if 'ranking_df' not in st.session_state:
-    st.session_state.ranking_df = None
-if 'model_columns' not in st.session_state:
-    st.session_state.model_columns = None
-if 'feature_weights' not in st.session_state:
-    st.session_state.feature_weights = None
+if 'mm' not in st.session_state:
+    st.session_state.mm = None
 
-col1, col2, col3 = st.columns([1,7,1])
+col1, col2, col3 = st.columns([1, 7, 1])
 with col2:
     st.write("")
-    st.write(f"""
+    st.write("""
     **The Matched Market Testing Suite (MMT) is built to create effective market testing strategy for brands and 
     advertisers. Leveraging modern AI and machine learning technologies, it learns the relationship between business 
     KPIs and demographic, economic and media factors, and determines what the leading factors are and how much each 
     factor contributes to the business KPI.** 
     """)
     tab1, tab2, tab3, tab4 = st.tabs([
-        "**Instructions**", "**Data Uploader**", "**Market Ranking**", "**Matched Markets**"
+        "**Instructions**", "**Matched Market Command Center**", "**Market Rankings & Insights**", "**Matched Markets**"
     ])
 
 # tab1: instructions
@@ -96,263 +82,316 @@ with tab1:
         st.markdown('2. Market prioritization for a global investment fund (Primary Business KPI: Not defined)')
         st.markdown('3. Matched markets design for a fashion brand in the U.S. markets (Primary Business KPI: Sales Amount)')
 
+# tab2: Matched Market Command Center
 with tab2:
-    col1, col2 = st.columns([1,1])
-    with col1:
-        st.write("")
-        # kpi data
-        kpi_df = None
-        uploaded_file_kpi = st.file_uploader("**Upload KPI data**")
-        st.info(
-        """👆 To protect your data and privacy while demoing this prototype, please upload a .csv file first. 
-        Sample to try: [kpi_data_example.csv](https://drive.google.com/file/d/1n6gayg5VcWRCtJ5qVIfRwjc08WJmed3y/view?usp=sharing)."""
-        )
-        if uploaded_file_kpi is not None:
-            # Can be used wherever a "file-like" object is accepted:
-            kpi_df = pd.read_csv(uploaded_file_kpi)
-            if len(kpi_df) > 0:
-                st.success(f"Successfully loaded KPI Data. Rows = {len(kpi_df)}. A snapshot is provided below. ")
-                st.dataframe(kpi_df, hide_index=True)
+    kpi_df, audience_df, agg_kpi_df = None, None, None
+    with st.expander(label="**Data Uploader**", expanded=True):
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            st.write("")
+            uploaded_file_kpi = st.file_uploader("**Upload KPI data**")
+            st.info(
+                """👆 To protect your data and privacy while demoing this prototype, please upload a .csv file first. 
+                Sample to try: [kpi_data_example.csv](https://drive.google.com/file/d/1n6gayg5VcWRCtJ5qVIfRwjc08WJmed3y/view?usp=sharing)."""
+            )
+            if uploaded_file_kpi is not None:
+                # Can be used wherever a "file-like" object is accepted:
+                kpi_df = pd.read_csv(uploaded_file_kpi)
+                kpi_column_exists = any('kpi' in v.lower() for v in kpi_df.columns)
+                if (len(kpi_df) > 0) & kpi_column_exists:
+                    st.success(
+                       f"Successfully Loaded KPI Data. Total of {len(kpi_df)} Records. A Snapshot Is Provided Below."
+                    )
+                    st.dataframe(kpi_df, hide_index=True)
+                else:
+                    st.error(f"Please Load a Compatible Dataset with a Defined KPI Column.")
+        with col2:
+            st.write("")
+            uploaded_file_audience = st.file_uploader("**Upload Audience Data**")
+            st.info(
+                """👆 To protect your data and privacy while demoing this prototype, please upload a .csv file first. 
+                Sample to try: [audience_data_example.csv](https://drive.google.com/file/d/1e57TDVk4LyjeLBSCHZ5I6eCeS3QX46FR/view?usp=sharing)."""
+            )
+            if uploaded_file_audience is not None:
+                # Can be used wherever a "file-like" object is accepted:
+                audience_df = pd.read_csv(uploaded_file_audience)
+                audience_column_exists = any('audience' in v.lower() for v in audience_df.columns)
+                if (len(audience_df) > 0) & audience_column_exists:
+                    st.success(
+                       f"Successfully Loaded Audience Data. Total of {len(audience_df)} Records. A Snapshot Is Provided Below."
+                    )
+                    st.dataframe(audience_df, hide_index=True)
+                else:
+                    st.error(f"Please Load a Compatible Dataset with a Defined Audience Column.")
 
-    with col2:
-        st.write("")
-        # audience data
-        audience_df = None
-        uploaded_file_audience = st.file_uploader("**Upload Audience Data**")
-        st.info(
-        """👆 To protect your data and privacy while demoing this prototype, please upload a .csv file first. 
-        Sample to try: [audience_data_example.csv](https://drive.google.com/file/d/1e57TDVk4LyjeLBSCHZ5I6eCeS3QX46FR/view?usp=sharing)."""
-        )
-        if uploaded_file_audience is not None:
-            # Can be used wherever a "file-like" object is accepted:
-            audience_df = pd.read_csv(uploaded_file_audience)
-            if len(audience_df) > 0:
-                st.success(f"Successfully loaded audience data. Rows = {len(audience_df)}. A snapshot is provided below.")
-                st.dataframe(audience_df, hide_index=True)
+    with st.expander(label='**KPI Selection**'):
+        col1, col2 = st.columns([1, 1])
+        if (kpi_df is None) | (audience_df is None):
+            st.error('Please Return to the Previous Expander and Upload Audience and KPI Data', icon="🚨")
+        else:
+            with col1:
+                agg_kpi_df = None
+                kpi_columns = [i for i in list(kpi_df) if 'kpi' in i.lower()]
+                kpi_column = st.selectbox(
+                    "**Select a KPI Column to Rank Markets By**", options=kpi_columns
+                )
 
-    st.write("")
-    st.markdown("""
-    ***
-    """)
+                audience_columns = [i for i in list(audience_df) if 'audience' in i.lower()]
+                market_level = 'DMA' if len([c for c in list(kpi_df) if 'dma' in c.lower()]) > 0 else 'World'
+                market_column = DMA_CODE if market_level == 'DMA' else COUNTRY_CODE
+
+                rename_dict = {'DMA_CODE': DMA_CODE, 'COUNTRY_CODE': COUNTRY_CODE, 'COUNTRY_NAME': COUNTRY_NAME}
+                kpi_df = kpi_df.rename(columns=lambda col: rename_dict.get(col, col))
+                audience_df = audience_df.rename(columns=lambda col: rename_dict.get(col, col))
+                world_country_df = world_country_df.rename(columns=lambda col: rename_dict.get(col, col))
+
+                if is_numeric_dtype(kpi_df[kpi_column]):
+                    with col2:
+                        num_tiers = st.number_input(
+                            min_value=1, max_value=10, value=4, label='**Number of KPI Tiers**'
+                        )
+                        agg_kpi_df = kpi_df.groupby(market_column)[[kpi_column]].sum().reset_index()
+                        agg_kpi_df[PERCENT_RANK] = agg_kpi_df[kpi_column].rank(pct=True)
+                        agg_kpi_df[TIER] = agg_kpi_df[PERCENT_RANK].apply(lambda x: calculate_tier(x, num_tiers))
+                else:
+                    agg_kpi_df = kpi_df
+                    agg_kpi_df[TIER] = agg_kpi_df[kpi_column]
+
+    with st.expander(label="**Incorporating Additional Data Sources**"):
+        if (kpi_df is None) | (audience_df is None):
+            st.error('Please Return to the Previous Expander and Upload Audience and KPI Data', icon="🚨")
+        else:
+            if market_level == 'DMA':
+                dma_path = join(cd, 'data', 'census_dma')
+                dma_files = [
+                    f for f in os.listdir(dma_path) if \
+                    os.path.isfile(os.path.join(dma_path, f)) and f != '.DS_Store'
+                ]
+                dma_dfs = {
+                    v.replace('.csv', '').replace('_', ' ').title().replace('Dma', 'DMA').replace(
+                        'Cpc Cpm', 'CPC CPM').replace('Gdp', 'GDP'): pd.read_csv(
+                        join(dma_path, v)
+                    ).drop('Unnamed: 0', axis=1)
+                    for i, v in enumerate(dma_files)
+                }
+                dma_included = st.multiselect(
+                    '**Select DMA Census Data to Include**',
+                    options=list(dma_dfs.keys()),
+                    default=DEFAULT_DMA
+                )
+                dma_data = generate_dma_data(dma_dfs, dma_included)
+                df = audience_df.merge(dma_data, on=market_column, how='inner').merge(
+                    agg_kpi_df, on=market_column, how='inner'
+                )
+            else:
+                df = audience_df.merge(world_country_df, on=market_column, how='inner').merge(
+                    agg_kpi_df, on=market_column, how='inner'
+                )
+
+            cov_columns = [c for c in list(dma_data) if c not in [DMA_NAME, DMA_CODE]] if market_level == 'DMA' else \
+                [c for c in list(world_country_df) if c not in [COUNTRY_CODE, COUNTRY_NAME]]
+
+            cov_columns = {
+                c: c.title().replace('_', ' ') for c in cov_columns
+            }
+
+            df = df.rename(columns=cov_columns)
+            cov_columns = [v for k, v in cov_columns.items()]
+            included_cov = st.multiselect(
+                '**Select Covariate Variables to Include**',
+                options=cov_columns,
+                default=cov_columns
+            )
+
+            df_columns = [COUNTRY_CODE, COUNTRY_NAME] + included_cov + audience_columns + [kpi_column, TIER] if \
+                market_level != 'DMA' else [DMA_CODE, DMA_NAME] + included_cov + audience_columns + [kpi_column, TIER]
+            df = df[df_columns]
+            if st.checkbox("View Merged KPI KPI, Audiences and Market Data"):
+                st.dataframe(df, hide_index=True)
+            st.success("Successfully Merged KPI, Audiences and Market data. Review the merged data below.")
+
+    if agg_kpi_df is not None:
+        bt_run_market_ranking = st.button(label="**Confirm and Run Market Ranking**")
+        if bt_run_market_ranking:
+            with st.spinner(text="Running ML model to calculate factor weights..."):
+                mm = MatchedMarketScoring(
+                    df=df,
+                    audience_columns=audience_columns,
+                    display_columns=[DMA_CODE, DMA_NAME] if market_level == 'DMA'\
+                        else [COUNTRY_CODE, COUNTRY_NAME],
+                    covariate_columns=cov_columns,
+                    market_column=market_column
+                )
+                st.session_state.mm = mm
+            st.success("Successfully Ran Market Scoring & Matching")
+    st.markdown("***")
     st.markdown(
         "If you have any questions about the KPI or Audience data required, please reach out to Media Analytics" \
         "team at MediaAnalytics@mediamonks.com"
     )
 
-# tab 3: market prioritization
+# tab3: Market Rankings & Insights
 with tab3:
-    if (kpi_df is None) | (audience_df is None):
-        st.error('Please Return to the Previous Tab and Upload Audience and  KPI Data', icon="🚨")
-    else:
-        # kpi selection
-        agg_kpi_df = None
-        if kpi_df is not None and audience_df is not None:
-            kpi_columns = [i for i in list(kpi_df) if 'KPI' in i]
-            audience_columns = [i for i in list(audience_df) if 'AUDIENCE' in i]
-            kpi_column = st.selectbox("**Select a KPI to Rank Markets By**", options=kpi_columns)
-            market_column = list(kpi_df)[0]
-            market_level = market_column.split('_')[0]
+    if st.session_state.mm is not None:
 
-            # process kpi data if numeric
-            if is_numeric_dtype(kpi_df[kpi_column]):
-                # kpi_df['WEEK'] = kpi_df['WEEK'].astype('datetime64[ns]')
-                agg_kpi_df = kpi_df.groupby(market_column)[[kpi_column]].sum().reset_index()
-                agg_kpi_df['pct_rank'] = agg_kpi_df[kpi_column].rank(pct=True)
-                agg_kpi_df['KPI_TIER'] = np.where(
-                    agg_kpi_df.pct_rank <= 0.25, 'Tier 4',
-                    np.where(
-                        agg_kpi_df.pct_rank <= 0.5, 'Tier 3',
-                        np.where(agg_kpi_df.pct_rank <= 0.75, 'Tier 2', 'Tier 1')
-                    )
+        mm = st.session_state.mm
+        display_df1 = mm.fi[[FEATURE, WEIGHT]].head(10)
+        display_df1[WEIGHT] = display_df1[WEIGHT]/display_df1[WEIGHT].sum()
+
+        display_df2 = mm.ranking_df.reset_index(drop=True)
+        col1, col2, col3, col4 = st.columns([.25, .25, .5,.25], gap='small')
+        with col2:
+            top_n = st.number_input(
+                '**Top N Markets**', min_value=1, max_value=10, value=4
+            )
+        with col3:
+            tier_filter = st.multiselect(
+                label='**Tier Filter**', options=set(mm.ranking_df[TIER]),
+                default=set(mm.ranking_df[TIER])
+            )
+        st.write("")
+
+        if market_level == 'DMA':
+            with st.expander("**DMA Heat Map**", expanded=True):
+                with open("dma.json") as geofile:
+                    source_geo = json.load(geofile)
+                dmas_geo = [dict(type='FeatureCollection', features=[feat]) for feat in source_geo.get('features')]
+                perf_df = mm.ranking_df.reset_index(drop=True)
+                perf_df = perf_df[perf_df[TIER].isin(tier_filter)]
+                perf_df = perf_df[[DMA_CODE, DMA_NAME, 'Score']].rename(columns={'DMA Code': 'dma_code'})
+                data = get_choropleths(dmas_geo, perf_df, 'Score')
+                axis = dict(showgrid=False, showticklabels=False)
+                layout = dict(
+                    title='DMA Performance',
+                    height=1000,
+                    width=1500,
+                    hovermode='closest',
+                    xaxis=axis,
+                    yaxis=axis,
+                    plot_bgcolor='white'
                 )
-                agg_kpi_df = agg_kpi_df[[market_column, kpi_column, 'KPI_TIER']]
-            else:
-                agg_kpi_df = kpi_df
-                agg_kpi_df['KPI_TIER'] = agg_kpi_df[kpi_column]
+                fig = dict(data=data, layout=layout)
+                st.plotly_chart(fig, theme='streamlit', use_container_width=False)
 
-            # set data based on market level
-            standard_df = us_dma_df if market_level == 'DMA' else world_country_df
-            standard_columns = standard_columns_us_dma if market_level == 'DMA' else standard_columns_world_country
+        with st.expander(
+                f"**Socioeconomic Weights for {kpi_column.title().replace('_', ' ')} & Market Rankings**", expanded=True
+        ):
+            col1, col2, col3 = st.columns([.2, 1.5, 1.75])
+            with col2:
+                fig_feature_weights = px.pie(
+                    display_df1,
+                    values=WEIGHT,
+                    names=FEATURE,
+                    color=FEATURE,
+                    title=f"Socioeconomic Feature Weights for {kpi_column.title().replace('_', ' ')} Tiers",
+                    width=600,
+                    height=500,
+                )
+                st.plotly_chart(
+                    fig_feature_weights, theme='streamlit', use_container_width=False
+                )
 
-        if agg_kpi_df is not None:
+            with col3:
+                display_df2 = display_df2[(display_df2[TIER].isin(tier_filter)) &
+                    (display_df2['Tier Rank'] <= top_n)]
+                graph_col = DMA_NAME if market_level == 'DMA' else COUNTRY_NAME
+                fig_ranking = px.bar(
+                    display_df2.sort_values(by=SCORE, ascending=True),
+                    x=SCORE,
+                    y=graph_col,
+                    orientation='h',  # horizontal bar chart
+                    labels={graph_col: 'Market Rank', SCORE: 'Market Score'},
+                    title=f"Top {top_n} Markets based on {kpi_column.title().replace('_', ' ')} Score",
+                    width=600,
+                    height=500,
+                    color=TIER
+                )
+                st.plotly_chart(fig_ranking, theme='streamlit')
 
-            df = standard_df[standard_columns].merge(
-                audience_df, on=market_column, how='inner'
-            ).merge(
-                agg_kpi_df, on=market_column, how='inner'
-            )
-            df = df.dropna(axis=1)
-            st.success("Successfully Merged KPI, Audiences and Market data. Review the merged data below.")
-            with st.expander('Audience and Market Merged Dataset', expanded=False):
-                st.dataframe(df, hide_index=True)
+            st.write("")
+            col1, col2, col3 = st.columns([1, 1, 1])
+            with col2:
+                st.markdown(
+                    f"**Top {top_n} Markets based on {kpi_column.title().replace('_', ' ')} Score**"
+                )
+                st.dataframe(
+                    display_df2[[TIER, graph_col, 'Score', 'Tier Rank']],
+                    hide_index=True, use_container_width=True
+                )
 
-            bt_run_market_ranking = st.button(
-                label="Confirm and Run Market Ranking"
-            )
-
-            if bt_run_market_ranking:
-
-                # run RF to calculate weights
-                with st.spinner(text="Running ML model to calculate factor weights..."):
-
-                    target = 'KPI_TIER'
-                    # assuming first two columns are market code and name
-                    model_columns = standard_columns[3 : ] + audience_columns
-                    model_columns = [i for i in model_columns if i in list(df)]
-                    df = df.dropna(subset=model_columns)
-                    X = df[model_columns]
-                    y = df[target]
-
-                    param_grid = {
-                        'criterion': ['gini', 'entropy', 'log_loss'],
-                        'max_depth': [3, 4, 5, 6, 7, 8, 9, 10],
-                        'max_features': ['sqrt', None],
-                        'n_estimators': [10, 20, 50, 100, 200]
-                    }
-
-                    model = RandomForestClassifier(random_state=100)
-
-                    grid_search = GridSearchCV(
-                        estimator=model,
-                        scoring='accuracy',
-                        param_grid=param_grid,
-                        cv=5,
-                        n_jobs=-1,
-                        refit=True,
-                        verbose=0
-                    )
-
-                    grid_search.fit(X, y)
-
-                    best_model = grid_search.best_estimator_
-                    feature_names = X.columns
-                    feature_weights = best_model.feature_importances_
-
-                    fi = pd.DataFrame(
-                        {'FEATURE': feature_names, 'WEIGHT': feature_weights}
-                    ).sort_values(by=['WEIGHT'], ascending=False)
-                    fi['CUMULATIVE WEIGHTS'] = fi['WEIGHT'].cumsum()
-
-                    # calculate scores
-                    score_df = df[model_columns].copy()
-                    score_df['CPM'] = 1 / score_df['CPM']
-                    scaler = MinMaxScaler()
-                    X_norm = scaler.fit_transform(score_df)
-                    scores = np.matmul(X_norm, feature_weights)
-
-                    ranking_df = pd.DataFrame(X_norm, columns=model_columns)
-                    ranking_df['SCORE'] = list(scores)
-
-                    display_columns = standard_columns[0 : 2] + [kpi_column, 'KPI_TIER']
-                    ranking_df = pd.concat([df[display_columns], ranking_df], axis=1)
-                    ranking_df = ranking_df.sort_values(by=['SCORE'], ascending=False).reset_index(drop=True)
-
-                    # update session state
-                    st.session_state.ranking_df = ranking_df
-                    st.session_state.model_columns = model_columns
-                    st.session_state.feature_weights = feature_weights
-
-                st.success("Successfully Calculated Factor weights")
-                st.markdown("***")
-                st.markdown(f"<h3 style='text-align: left;'> Factor Weights for {kpi_column} </h3>", unsafe_allow_html=True)
-                col1, col2, col3 = st.columns([3, 3, 1], gap='small')
-                display_df1 = fi[['FEATURE', 'WEIGHT']].rename(
-                    columns={'FEATURE': 'Feature', 'WEIGHT': 'Weight'})
-
-                with col1:
-                     fig_feature_weights = px.pie(
-                        display_df1,
-                        values ='Weight',
-                        names ='Feature',
-                        color ='Feature',
-                        title =f'Socioeconomic Factor Weights for {kpi_column}',
-                        width = 500,
-                        height = 500,
-                     )
-                     st.plotly_chart(fig_feature_weights, theme='streamlit')
-
-                with col2:
-                    st.write("")
-                    st.write("")
-                    st.write("")
-                    st.write("")
-                    st.write("")
-                    st.write("")
-                    st.write("")
-                    st.dataframe(display_df1, hide_index=True)
-
-                st.subheader("Market Rankings")
-                ranking_df['Overall Rank'] = ranking_df['SCORE'].rank(ascending=False).astype(int)
-                ranking_df['Tier Ranking'] = ranking_df.groupby(['KPI_TIER'])['SCORE'].rank(ascending=False).astype(int)
-
-                col1, col2, col3 = st.columns([3, 3, 1], gap='medium')
-                graph_col = [c for c in list(ranking_df) if 'NAME' in c][0]
-
-                with col1:
-                    fig1 = px.bar(
-                       ranking_df.head(10).sort_values(by='SCORE', ascending = True),
-                         x='SCORE',
-                         y=graph_col,
-                         title=f'Top 10  Markets',
-                         orientation='h',  # horizontal bar chart
-                         labels={graph_col: 'Market Rank', 'SCORE': 'Market Score'},
-                         width = 500,
-                         height=500
-                     )
-                    st.plotly_chart(fig1, theme='streamlit')
-
-                with col2:
-                    st.write("")
-                    st.write("")
-                    st.write("")
-                    with st.expander('Market Ranking Table', expanded=False):
-                        st.dataframe(ranking_df[[
-                            'KPI_TIER', graph_col, 'SCORE', 'Tier Ranking', 'Overall Rank'
-                        ]], hide_index=True)
-
-# tab 4: matched markets
-with tab4:
-    ranking_df = st.session_state.ranking_df
-    if ranking_df is None:
-        st.error('Please Return to the Previous Tab and Run Market Ranking', icon="🚨")
     else:
+        st.error('Please Return to the Previous Tab and Upload Audience and KPI Data', icon="🚨")
 
-        test_markets = []
-        control_markets = []
-
-        kpi_tiers = list(ranking_df.KPI_TIER.unique())
-        for t in kpi_tiers:
-            market_tier = ranking_df[ranking_df.KPI_TIER == t].reset_index(drop=True)
-            # by default, first row is the test for the tier
-            # calculate distance from the first row
-            market_dist = market_tier[st.session_state.model_columns]
-            for i in range(1, len(market_dist)):
-                market_dist.iloc[i] = market_dist.iloc[0] - market_dist.iloc[i]
-            market_dist.iloc[0] = 0
-            market_dist = market_dist.abs()
-
-            # calculate weighted
-            dist_tier = list(np.matmul(market_dist, st.session_state.feature_weights))[1 : ]
-            best_match_index = dist_tier.index(min(dist_tier)) + 1
-
-            # save the test and control geos
-            test_markets.append(market_tier[market_column][0])
-            control_markets.append(market_tier[market_column][best_match_index])
-
-        mm_display_columns = list(ranking_df)[0 : 4] + ['SCORE']
-        test_df = ranking_df[ranking_df[market_column].isin(test_markets)][mm_display_columns]
-        control_df = ranking_df[ranking_df[market_column].isin(control_markets)][mm_display_columns]
-
-        test_df.columns = [f'TEST_{i}' if i != 'KPI_TIER' else i for i in list(test_df)]
-        control_df.columns = [f'CONTROL_{i}' if i != 'KPI_TIER' else i for i in list(control_df)]
-
-        matched_markets_df = pd.merge(test_df, control_df, on=['KPI_TIER'], how='left').sort_values(by='KPI_TIER')
-        mm_display_columns =  ['KPI_TIER'] + \
-                              [k for k in list(matched_markets_df) if 'NAME' in k or 'CODE' in k]
-
-
-        col1, col2, col3 = st.columns([3,1,1])
+# tab4: Matched Markets
+with tab4:
+    if st.session_state.mm is not None:
+        mm = st.session_state.mm
+        mm_df = mm.similar_markets
+        col1, col2, col3, col4 = st.columns([1, 1, 1,1], gap='small')
         with col1:
-            st.write("**Matched Markets Based on Similarity Scoring**")
-            display_df2 = matched_markets_df[mm_display_columns]
-            st.dataframe(display_df2, hide_index=True)
+            tier_filter = st.multiselect(
+                "**Select Relevant Tiers**",
+                options=list(set(mm_df['Tier'])),
+                default=list(set(mm_df['Tier']))
+            )
+            tier_mask = mm_df['Tier'].isin(tier_filter)
+
+        with col2:
+            market_removal = st.multiselect(
+                "**Select Markets to Filter Out from Both Control & Test**",
+                options=list(set(mm_df[tier_mask]['Control Market Name']))
+            )
+
+            removal_mask = (mm_df['Control Market Name'].isin(market_removal)) | \
+                               (mm_df['Test Market Name'].isin(market_removal))
+
+        with col3:
+            specific_markets = st.multiselect(
+                "**Select Specific Control and Test Markets**",
+                options= list(set(mm_df[tier_mask & ~removal_mask]['Control Market Name']))
+            )
+            spec_mask = mm_df['Control Market Name'].isin(specific_markets) if \
+                specific_markets else ~mm_df['Control Market Name'].isin([])
+
+        with col4:
+            num_pairs = st.number_input(
+                    '**Number of Test & Control Market Pairs**',
+                min_value=1, max_value=10, value= 5 if len(specific_markets) == 0 else len(specific_markets)
+                )
+
+        mm_df = mm_df[tier_mask & ~removal_mask & spec_mask]
+        col1, col2, col3 = st.columns([1, 3, 1], gap='medium')
+
+        with col2:
+            if len(tier_filter) > 0:
+
+                counter = 0
+                utilized_markets = []
+                matched_df = pd.DataFrame()
+                max_counter = num_pairs*len(tier_filter) if len(specific_markets) == 0 else \
+                    len(specific_markets)*num_pairs
+
+                while counter < max_counter:
+                    control_market_mask = (~mm_df['Control Market Name'].isin(utilized_markets))
+                    test_market_mask = (~mm_df['Test Market Name'].isin(utilized_markets))
+
+                    mm_df1 = mm_df[control_market_mask & test_market_mask].sort_values(by='Distance', ascending=True)
+                    mm_df1['Rank'] = mm_df1.groupby(['Tier']).cumcount()+1
+                    matched_df = pd.concat([matched_df, mm_df1[mm_df1['Rank'] == 1]], axis=0)
+                    utilized_markets.extend(
+                      [c for c in mm_df1[mm_df1['Rank'] == 1]['Control Market Name']] +
+                      [c for c in mm_df1[mm_df1['Rank'] == 1]['Test Market Name']]
+                    )
+                    counter += len(tier_filter) if len(specific_markets) == 0 else len(specific_markets)
+
+                st.write("")
+                st.write("")
+                st.markdown("")
+                st.dataframe(
+                    matched_df.sort_values(
+                        by='Tier', ascending=True),
+                        hide_index=True,
+                        use_container_width=True
+                )
+    else:
+        st.error('Please Return to the Previous Tab and Upload Audience and KPI Data', icon="🚨")

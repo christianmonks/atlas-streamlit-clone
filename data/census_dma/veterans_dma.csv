@@ -1,0 +1,209 @@
+,DMA Code,DMA Name,universe
+0,500,Portland-Auburn,75548.0
+1,501,New York,567662.0
+2,502,Binghamton,20629.0
+3,503,Macon,48723.0
+4,504,Philadelphia,383431.0
+5,505,Detroit,421178.0
+6,506,Boston (Manchester),294724.0
+7,507,Savannah,343637.0
+8,508,Pittsburgh,177738.0
+9,509,Ft. Wayne,112771.0
+10,510,Cleveland-Akron (Canton),217425.0
+11,511,"Washington, Dc (Hagrstwn)",582182.0
+12,512,Baltimore,265931.0
+13,513,Flint-Saginaw-Bay City,70500.0
+14,514,Buffalo,434856.0
+15,515,Cincinnati,132786.0
+16,516,Erie,28117.0
+17,517,Charlotte,178645.0
+18,518,Greensboro-H.Point-W.Salem,101179.0
+19,519,"Charleston, Sc",76254.0
+20,520,Augusta-Aiken,522650.0
+21,521,Providence-New Bedford,80485.0
+22,522,"Columbus, Ga (Opelika, Al)",47870.0
+23,523,Burlington-Plattsburgh,52981.0
+24,524,Atlanta,546584.0
+25,525,"Albany, Ga",23707.0
+26,526,Utica,10711.0
+27,527,Indianapolis,169066.0
+28,528,Miami-Ft. Lauderdale,125197.0
+29,529,Louisville,113505.0
+30,530,Tallahassee-Thomasville,46069.0
+31,531,"Tri-Cities, Tn-Va",54288.0
+32,532,Albany-Schenectady-Troy,80248.0
+33,533,Hartford & New Haven,130847.0
+34,534,Orlando-Daytona Bch-Melbrn,320647.0
+35,535,"Columbus, Oh",140589.0
+36,536,Youngstown,46052.0
+37,537,Bangor,27027.0
+38,538,"Rochester, Ny",310143.0
+39,539,Tampa-St. Pete (Sarasota),388691.0
+40,540,Traverse City-Cadillac,241922.0
+41,541,Lexington,68566.0
+42,542,Dayton,89138.0
+43,543,Springfield-Holyoke,36560.0
+44,544,Norfolk-Portsmth-Newpt Nws,348837.0
+45,545,Greenville-N.Bern-Washngtn,72401.0
+46,546,"Columbia, Sc",81995.0
+47,547,Toledo,59822.0
+48,548,West Palm Beach-Ft. Pierce,241632.0
+49,549,Watertown,111593.0
+50,550,Wilmington,39296.0
+51,551,Lansing,36859.0
+52,552,Presque Isle,6063.0
+53,553,Marquette,17525.0
+54,554,Wheeling-Steubenville,23086.0
+55,555,Syracuse,51209.0
+56,556,Richmond-Petersburg,223937.0
+57,557,Knoxville,137577.0
+58,558,Lima,10672.0
+59,559,Bluefield-Beckley-Oak Hill,146014.0
+60,560,Raleigh-Durham (Fayetvlle),212708.0
+61,561,Jacksonville,320639.0
+62,563,Grand Rapids-Kalmzoo-B.Crk,159758.0
+63,564,Charleston-Huntington,65098.0
+64,565,Elmira (Corning),18772.0
+65,566,Harrisburg-Lncstr-Leb-York,127166.0
+66,567,Greenvll-Spart-Ashevll-And,799967.0
+67,569,Harrisonburg,10085.0
+68,570,Myrtle Beach-Florence,54226.0
+69,571,Ft. Myers-Naples,324366.0
+70,573,Roanoke-Lynchburg,57110.0
+71,574,Johnstown-Altoona-St Colge,51823.0
+72,575,Chattanooga,259983.0
+73,576,Salisbury,32011.0
+74,577,Wilkes Barre-Scranton-Hztn,372858.0
+75,581,Terre Haute,24473.0
+76,582,"Lafayette, In",7383.0
+77,583,Alpena,4016.0
+78,584,Charlottesville,14422.0
+79,588,South Bend-Elkhart,171033.0
+80,592,Gainesville,22463.0
+81,596,Zanesville,5353.0
+82,597,Parkersburg,11616.0
+83,598,Clarksburg-Weston,20022.0
+84,600,Corpus Christi,39679.0
+85,602,Chicago,503831.0
+86,603,Joplin-Pittsburg,41670.0
+87,604,Columbia-Jefferson City,30332.0
+88,605,Topeka,34898.0
+89,606,Dothan,22941.0
+90,609,St. Louis,343954.0
+91,610,Rockford,27687.0
+92,611,Rochestr-Mason City-Austin,21757.0
+93,612,Shreveport,98745.0
+94,613,Minneapolis-St. Paul,468457.0
+95,616,Kansas City,149669.0
+96,617,Milwaukee,112529.0
+97,618,Houston,286391.0
+98,619,"Springfield, Mo",124807.0
+99,622,New Orleans,87042.0
+100,623,Dallas-Ft. Worth,381334.0
+101,624,Sioux City,200178.0
+102,625,Waco-Temple-Bryan,752778.0
+103,626,Victoria,4960.0
+104,627,Wichita Falls & Lawton,39627.0
+105,628,Monroe-El Dorado,23211.0
+106,630,Birmingham (Ann And Tusc),262070.0
+107,631,Ottumwa-Kirksville,7002.0
+108,632,Paducah-Cape Girard-Harsbg,126930.0
+109,633,Odessa-Midland,20315.0
+110,634,Amarillo,30972.0
+111,635,Austin,120597.0
+112,636,Harlingen-Wslco-Brnsvl-Mca,32165.0
+113,637,Cedar Rapids-Wtrlo-Iwc&Dub,49305.0
+114,638,St. Joseph,10727.0
+115,639,"Jackson, Tn",14931.0
+116,640,Memphis,430422.0
+117,641,San Antonio,513556.0
+118,642,"Lafayette, La",27997.0
+119,643,Lake Charles,16990.0
+120,644,"Alexandria, La",18386.0
+121,647,Greenwood-Greenville,6038.0
+122,648,Champaign&Sprngfld-Decatur,54203.0
+123,649,Evansville,113425.0
+124,650,Oklahoma City,225282.0
+125,651,Lubbock,19322.0
+126,652,Omaha,73984.0
+127,656,Panama City,39325.0
+128,657,Sherman-Ada,24551.0
+129,658,Green Bay-Appleton,257257.0
+130,659,Nashville,294216.0
+131,661,San Angelo,112994.0
+132,662,Abilene-Sweetwater,21765.0
+133,669,Madison,51647.0
+134,670,Ft. Smith-Fay-Sprngdl-Rgrs,52411.0
+135,671,Tulsa,145624.0
+136,673,Columbus-Tupelo-West Point,23856.0
+137,675,Peoria-Bloomington,94032.0
+138,676,Duluth-Superior,72585.0
+139,678,Wichita-Hutchinson Plus,241593.0
+140,679,Des Moines-Ames,62291.0
+141,682,Davenport-R.Island-Moline,50037.0
+142,686,Mobile-Pensacola (Ft Walt),145063.0
+143,687,Bismarck-Mnt-Dcknsn(Wlstn),104524.0
+144,691,Huntsville-Decatur (Flor),217198.0
+145,692,Beaumont-Port Arthur,26386.0
+146,693,Little Rock-Pine Bluff,100561.0
+147,698,Montgomery-Selma,42260.0
+148,702,La Crosse-Eau Claire,35924.0
+149,705,Wausau-Rhinelander,30060.0
+150,709,Tyler-Longview(Lfkn&Ncgd),45280.0
+151,710,Hattiesburg-Laurel,15919.0
+152,711,Meridian,9941.0
+153,716,Baton Rouge,19971.0
+154,717,Quincy-Hannibal-Keokuk,227980.0
+155,718,"Jackson, Ms",116958.0
+156,722,Lincoln & Hastings-Krny,39343.0
+157,724,Fargo,60490.0
+158,725,Sioux Falls(Mitchell),92967.0
+159,734,Jonesboro,13200.0
+160,736,Bowling Green,12276.0
+161,737,Mankato,16727.0
+162,740,North Platte,116243.0
+163,743,Anchorage,47928.0
+164,744,Honolulu,97477.0
+165,745,Fairbanks,11916.0
+166,746,Biloxi-Gulfport,35885.0
+167,747,Juneau,2152.0
+168,749,Laredo,5904.0
+169,751,Denver,249682.0
+170,752,Colorado Springs-Pueblo,113071.0
+171,753,Phoenix (Prescott),366922.0
+172,754,Butte-Bozeman,12899.0
+173,755,Great Falls,15350.0
+174,756,Billings,22361.0
+175,757,Boise,57866.0
+176,758,Idaho Fals-Pocatllo(Jcksn),19644.0
+177,759,Cheyenne-Scottsbluff,13972.0
+178,760,Twin Falls,11268.0
+179,762,Missoula,26062.0
+180,764,Rapid City,23536.0
+181,765,El Paso (Las Cruces),103297.0
+182,766,Helena,27553.0
+183,767,Casper-Riverton,10617.0
+184,770,Salt Lake City,131723.0
+185,771,Yuma-El Centro,21302.0
+186,773,Grand Junction-Montrose,14724.0
+187,789,Tucson (Sierra Vista),105558.0
+188,790,Albuquerque-Santa Fe,151445.0
+189,798,Glendive,838.0
+190,801,Eugene,51334.0
+191,802,Eureka,10250.0
+192,803,Los Angeles,824726.0
+193,807,San Francisco-Oak-San Jose,237254.0
+194,810,Yakima-Pasco-Rchlnd-Knnwck,41186.0
+195,811,Reno,56483.0
+196,813,Medford-Klamath Falls,39696.0
+197,819,Seattle-Tacoma,372023.0
+198,820,"Portland, Or",210925.0
+199,821,"Bend, Or",13755.0
+200,825,San Diego,210611.0
+201,828,Monterey-Salinas,29337.0
+202,839,Las Vegas,147475.0
+203,855,Santabarbra-Sanmar-Sanluob,337113.0
+204,862,Sacramnto-Stkton-Modesto,192047.0
+205,866,Fresno-Visalia,75684.0
+206,868,Chico-Redding,35021.0
+207,881,Spokane,95641.0
