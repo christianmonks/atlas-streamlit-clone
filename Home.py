@@ -14,7 +14,6 @@ from plotly.offline import init_notebook_mode, iplot
 
 from scripts.utils import *
 from scripts.constants import *
-from scripts.dma_plot import *
 from scripts.matched_market import MatchedMarketScoring, calculate_tier, generate_dma_data
 
 # Page Config
@@ -45,7 +44,6 @@ with col3:
 
 # Current working directory
 cd = os.getcwd()
-# Read world country data
 world_country_df = pd.read_csv(join(cd, 'data', 'mmt_world_country.csv'))
 
 # initialize session state
@@ -56,13 +54,14 @@ col1, col2, col3 = st.columns([1, 7, 1])
 with col2:
     st.write("")
     st.write("""
-    **The Matched Market Testing Suite (MMT) is built to create effective market testing strategy for brands and 
-    advertisers. Leveraging modern AI and machine learning technologies, it learns the relationship between business 
-    KPIs and demographic, economic and media factors, and determines what the leading factors are and how much each 
-    factor contributes to the business KPI.** 
+    **The Matched Market Testing Suite (MMT) is designed to craft potent market testing strategies tailored for brands and advertisers. 
+    Utilizing cutting-edge AI and machine learning technologies, it discerns the interplay between business KPIs and various demographic, 
+    economic, and media variables. By identifying key factors and quantifying their impact on business KPIs,
+    MMT empowers informed decision-making.** 
     """)
     tab1, tab2, tab3, tab4 = st.tabs([
-        "**Instructions**", "**Matched Market Command Center**", "**Market Rankings & Insights**", "**Matched Markets**"
+        "**Product Overview**", "**Matched Market Command Center**",
+        "**Market Rankings & Insights**", "**Matched Markets**"
     ])
 
 # tab1: instructions
@@ -72,15 +71,16 @@ with tab1:
               market ranking that can used to prioritize markets for media testing and market expansion purposes.")
         st.markdown("* **Matched Markets Tool**: Leveraging market ranking and factor weights, it provides matched market pairs that can \
               be used for media testing and uplift modeling.")
-    with st.expander('**Features of the Matched Market Testing Suite**', expanded=False):
-        st.markdown("* Multiple market levels: MMT supports analysis at Country and US DMA levels")
-        st.markdown("* Flexible KPIs: MMT supports both numeric KPIs (e.g., sales volume) and non-numeric KPIs (e.g., Brand Equity - Low/Medium/High)")
-        st.markdown("* Multiple KPIs: MMT supports market ranking and paring using different business KPIs")
-        st.markdown("* Multiple data sources: MMT can ingest 1st and 3rd-party data from brands and advertisers for more powerful insights")
-    with st.expander('**Case Studies of the Market Testing Suite**', expanded=False):
-        st.markdown('1. Market prioritization for an European online fashion retailer (Primary Business KPI: Brand Equity)')
-        st.markdown('2. Market prioritization for a global investment fund (Primary Business KPI: Not defined)')
-        st.markdown('3. Matched markets design for a fashion brand in the U.S. markets (Primary Business KPI: Sales Amount)')
+    with st.expander('**Enhanced Capabilities of the Matched Market Testing Suite**', expanded=False):
+        st.markdown("* **Diverse Market Analysis**: MMT facilitates comprehensive assessments at both Country and US DMA levels.")
+        st.markdown("* **Adaptable Metrics**: MMT accommodates various KPIs, encompassing numerical indicators like sales volume,"
+                    " as well as qualitative measures such as Brand Equity levels (Low/Medium/High).")
+        st.markdown("* **Versatile KPI Utilization**: MMT empowers market evaluation and comparison through the utilization of diverse business KPIs.")
+        st.markdown("* **Broad Data Integration**: MMT seamlessly integrates 1st and 3rd-party data from brands and advertisers, enriching analyses with robust insights.")
+    with st.expander('**Illustrative Examples of the Matched Market Testing Suite**', expanded=False):
+        st.markdown("* **European Fashion Retailer**: Strategic Market Assessment for a European online fashion retailer (Primary Business KPI: Brand Equity)")
+        st.markdown("* **Global Investment Fund**: Market Prioritization for a Global Investment Fund (Primary Business KPI: Not specified)")
+        st.markdown("* **US Fashion Retailer**: Tailored Market Analysis for a Fashion Brand in U.S. Markets (Primary Business KPI: Sales Volume)")
 
 # tab2: Matched Market Command Center
 with tab2:
@@ -226,7 +226,7 @@ with tab2:
             st.success("Successfully Ran Market Scoring & Matching")
     st.markdown("***")
     st.markdown(
-        "If you have any questions about the KPI or Audience data required, please reach out to Media Analytics" \
+        "If you have any questions about the KPI or Audience data required, please reach out to Media Analytics " \
         "team at MediaAnalytics@mediamonks.com"
     )
 
@@ -255,23 +255,30 @@ with tab3:
             with st.expander("**DMA Heat Map**", expanded=True):
                 with open("dma.json") as geofile:
                     source_geo = json.load(geofile)
-                dmas_geo = [dict(type='FeatureCollection', features=[feat]) for feat in source_geo.get('features')]
                 perf_df = mm.ranking_df.reset_index(drop=True)
                 perf_df = perf_df[perf_df[TIER].isin(tier_filter)]
-                perf_df = perf_df[[DMA_CODE, DMA_NAME, 'Score']].rename(columns={'DMA Code': 'dma_code'})
-                data = get_choropleths(dmas_geo, perf_df, 'Score')
-                axis = dict(showgrid=False, showticklabels=False)
-                layout = dict(
-                    title='DMA Performance',
+                fig_heat = px.choropleth(
+                    perf_df,
+                    geojson=source_geo,
+                    locations=DMA_CODE,
+                    color='Score',
+                    color_continuous_scale="YlOrRd",
+                    range_color=(0, perf_df['Score'].max()),
+                    scope="usa",
+                    labels={'Score':'Market Score'},
+                    hover_data=[DMA_NAME],
                     height=1000,
-                    width=1500,
-                    hovermode='closest',
-                    xaxis=axis,
-                    yaxis=axis,
-                    plot_bgcolor='white'
+                    width=1200,
+                    title=" <span style='font-size:30px;color:black;'>DMA Market Score Heat Map</span>",
                 )
-                fig = dict(data=data, layout=layout)
-                st.plotly_chart(fig, theme='streamlit', use_container_width=False)
+                fig_heat.update_layout(
+                    title_x=0.375,
+                    title_y=0.85
+                )
+                st.plotly_chart(
+                    fig_heat, theme='streamlit', use_container_width=True
+                )
+
 
         with st.expander(
                 f"**Socioeconomic Weights for {kpi_column.title().replace('_', ' ')} & Market Rankings**", expanded=True
@@ -309,13 +316,14 @@ with tab3:
                 st.plotly_chart(fig_ranking, theme='streamlit')
 
             st.write("")
-            col1, col2, col3 = st.columns([1, 1, 1])
+            col1, col2, col3 = st.columns([1, 1.5, 1])
             with col2:
                 st.markdown(
-                    f"**Top {top_n} Markets based on {kpi_column.title().replace('_', ' ')} Score**"
+                    f"<h5 style='text-align: center; color: black;'>Top {top_n} Markets based on {kpi_column.title().replace('_', ' ')} Score</h5>",
+                    unsafe_allow_html=True
                 )
                 st.dataframe(
-                    display_df2[[TIER, graph_col, 'Score', 'Tier Rank']],
+                    display_df2[[TIER, market_column, graph_col, 'Score', 'Tier Rank']],
                     hide_index=True, use_container_width=True
                 )
 
@@ -327,7 +335,7 @@ with tab4:
     if st.session_state.mm is not None:
         mm = st.session_state.mm
         mm_df = mm.similar_markets
-        col1, col2, col3, col4 = st.columns([1, 1, 1,1], gap='small')
+        col1, col2, col3, col4 = st.columns([1, 1, 1, 1], gap='small')
         with col1:
             tier_filter = st.multiselect(
                 "**Select Relevant Tiers**",
@@ -355,16 +363,15 @@ with tab4:
 
         with col4:
             num_pairs = st.number_input(
-                    '**Number of Test & Control Market Pairs**',
+                '**Number of Test & Control Market Pairs**',
                 min_value=1, max_value=10, value= 5 if len(specific_markets) == 0 else len(specific_markets)
-                )
+            )
 
         mm_df = mm_df[tier_mask & ~removal_mask & spec_mask]
         col1, col2, col3 = st.columns([1, 3, 1], gap='medium')
 
         with col2:
             if len(tier_filter) > 0:
-
                 counter = 0
                 utilized_markets = []
                 matched_df = pd.DataFrame()
@@ -374,10 +381,14 @@ with tab4:
                 while counter < max_counter:
                     control_market_mask = (~mm_df['Control Market Name'].isin(utilized_markets))
                     test_market_mask = (~mm_df['Test Market Name'].isin(utilized_markets))
-
-                    mm_df1 = mm_df[control_market_mask & test_market_mask].sort_values(by='Distance', ascending=True)
+                    mm_df1 = mm_df[control_market_mask & test_market_mask].sort_values(
+                        by='Distance', ascending=True
+                    )
                     mm_df1['Rank'] = mm_df1.groupby(['Tier']).cumcount()+1
-                    matched_df = pd.concat([matched_df, mm_df1[mm_df1['Rank'] == 1]], axis=0)
+                    matched_df = pd.concat([
+                        matched_df,
+                        mm_df1[mm_df1['Rank'] == 1]
+                    ], axis=0)
                     utilized_markets.extend(
                       [c for c in mm_df1[mm_df1['Rank'] == 1]['Control Market Name']] +
                       [c for c in mm_df1[mm_df1['Rank'] == 1]['Test Market Name']]
@@ -386,10 +397,14 @@ with tab4:
 
                 st.write("")
                 st.write("")
-                st.markdown("")
+                st.markdown(
+                    f"<h5 style='text-align: center; color: black;'>Matched Markets Based on Selected Criteria</h5>",
+                    unsafe_allow_html=True
+                )
                 st.dataframe(
                     matched_df.sort_values(
-                        by='Tier', ascending=True),
+                        by='Tier',
+                        ascending=True),
                         hide_index=True,
                         use_container_width=True
                 )
