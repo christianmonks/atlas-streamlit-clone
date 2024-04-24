@@ -14,7 +14,8 @@ from plotly.offline import init_notebook_mode, iplot
 
 from scripts.utils import *
 from scripts.constants import *
-from scripts.matched_market import MatchedMarketScoring, calculate_tier, generate_dma_data
+from scripts.matched_market import MatchedMarketScoring, \
+    calculate_tier, generate_dma_data
 
 # Page Config
 st.set_page_config(
@@ -183,13 +184,18 @@ with tab2:
                 df = audience_df.merge(dma_data, on=market_column, how='inner').merge(
                     agg_kpi_df, on=market_column, how='inner'
                 )
+
             else:
                 df = audience_df.merge(world_country_df, on=market_column, how='inner').merge(
                     agg_kpi_df, on=market_column, how='inner'
                 )
 
-            cov_columns = [c for c in list(dma_data) if c not in [DMA_NAME, DMA_CODE]] if market_level == 'DMA' else \
-                [c for c in list(world_country_df) if c not in [COUNTRY_CODE, COUNTRY_NAME]]
+            null_percentage = (df.isnull().sum() / len(df)) * 100
+            columns_to_drop = null_percentage[null_percentage > 50].index
+            df = df.drop(columns=columns_to_drop)
+
+            cov_columns = [c for c in list(dma_data) if (c not in [DMA_NAME, DMA_CODE]) and (c in list(df))] if market_level == 'DMA' else \
+                [c for c in list(world_country_df) if (c not in [COUNTRY_CODE, COUNTRY_NAME]) and (c in list(df))]
 
             cov_columns = {
                 c: c.title().replace('_', ' ') for c in cov_columns
@@ -237,7 +243,6 @@ with tab3:
         mm = st.session_state.mm
         display_df1 = mm.fi[[FEATURE, WEIGHT]].head(10)
         display_df1[WEIGHT] = display_df1[WEIGHT]/display_df1[WEIGHT].sum()
-
         display_df2 = mm.ranking_df.reset_index(drop=True)
         col1, col2, col3, col4 = st.columns([.25, .25, .5,.25], gap='small')
         with col2:
@@ -299,11 +304,15 @@ with tab3:
                 )
 
             with col3:
-                display_df2 = display_df2[(display_df2[TIER].isin(tier_filter)) &
-                    (display_df2['Tier Rank'] <= top_n)]
+                display_df2 = display_df2[
+                    (display_df2[TIER].isin(tier_filter)) &
+                    (display_df2['Tier Rank'] <= top_n)
+                ].sort_values(
+                    ['Tier Rank'],  ascending=True
+                )
                 graph_col = DMA_NAME if market_level == 'DMA' else COUNTRY_NAME
                 fig_ranking = px.bar(
-                    display_df2.sort_values(by=SCORE, ascending=True),
+                    display_df2,
                     x=SCORE,
                     y=graph_col,
                     orientation='h',  # horizontal bar chart
@@ -335,6 +344,7 @@ with tab4:
     if st.session_state.mm is not None:
         mm = st.session_state.mm
         mm_df = mm.similar_markets
+
         col1, col2, col3, col4 = st.columns([1, 1, 1, 1], gap='small')
         with col1:
             tier_filter = st.multiselect(
@@ -373,24 +383,23 @@ with tab4:
         with col2:
             if len(tier_filter) > 0:
                 counter = 0
-                utilized_markets = []
+                control_utilized_markets, test_utilized_markets = [], []
                 matched_df = pd.DataFrame()
                 max_counter = num_pairs*len(tier_filter) if len(specific_markets) == 0 else \
                     len(specific_markets)*num_pairs
-
                 while counter < max_counter:
-                    control_market_mask = (~mm_df['Control Market Name'].isin(utilized_markets))
-                    test_market_mask = (~mm_df['Test Market Name'].isin(utilized_markets))
-                    mm_df1 = mm_df[control_market_mask & test_market_mask].sort_values(
-                        by='Distance', ascending=True
-                    )
+                    control_market_mask = (~mm_df['Control Market Name'].isin(control_utilized_markets))
+                    test_utilized_mask = (~mm_df['Test Market Name'].isin(test_utilized_markets))
+                    mm_df1 = mm_df[control_market_mask & test_utilized_mask]
                     mm_df1['Rank'] = mm_df1.groupby(['Tier']).cumcount()+1
                     matched_df = pd.concat([
                         matched_df,
                         mm_df1[mm_df1['Rank'] == 1]
                     ], axis=0)
-                    utilized_markets.extend(
-                      [c for c in mm_df1[mm_df1['Rank'] == 1]['Control Market Name']] +
+                    control_utilized_markets.extend(
+                      [c for c in mm_df1[mm_df1['Rank'] == 1]['Control Market Name']]
+                    )
+                    test_utilized_markets.extend(
                       [c for c in mm_df1[mm_df1['Rank'] == 1]['Test Market Name']]
                     )
                     counter += len(tier_filter) if len(specific_markets) == 0 else len(specific_markets)
@@ -408,5 +417,6 @@ with tab4:
                         hide_index=True,
                         use_container_width=True
                 )
+
     else:
         st.error('Please Return to the Previous Tab and Upload Audience and KPI Data', icon="🚨")
