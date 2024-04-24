@@ -141,7 +141,10 @@ with tab2:
                 market_level = 'DMA' if len([c for c in list(kpi_df) if 'dma' in c.lower()]) > 0 else 'World'
                 market_column = DMA_CODE if market_level == 'DMA' else COUNTRY_CODE
 
-                rename_dict = {'DMA_CODE': DMA_CODE, 'COUNTRY_CODE': COUNTRY_CODE, 'COUNTRY_NAME': COUNTRY_NAME}
+                rename_dict = {
+                    'DMA_CODE': DMA_CODE, 'COUNTRY_CODE': COUNTRY_CODE, 'COUNTRY_NAME': COUNTRY_NAME
+                }
+
                 kpi_df = kpi_df.rename(columns=lambda col: rename_dict.get(col, col))
                 audience_df = audience_df.rename(columns=lambda col: rename_dict.get(col, col))
                 world_country_df = world_country_df.rename(columns=lambda col: rename_dict.get(col, col))
@@ -212,7 +215,7 @@ with tab2:
             df_columns = [COUNTRY_CODE, COUNTRY_NAME] + included_cov + audience_columns + [kpi_column, TIER] if \
                 market_level != 'DMA' else [DMA_CODE, DMA_NAME] + included_cov + audience_columns + [kpi_column, TIER]
             df = df[df_columns]
-            if st.checkbox("View Merged KPI KPI, Audiences and Market Data"):
+            if st.checkbox("View Merged KPI, Audiences and Market Data"):
                 st.dataframe(df, hide_index=True)
             st.success("Successfully Merged KPI, Audiences and Market data. Review the merged data below.")
 
@@ -332,7 +335,10 @@ with tab3:
                     unsafe_allow_html=True
                 )
                 st.dataframe(
-                    display_df2[[TIER, market_column, graph_col, 'Score', 'Tier Rank']],
+                    display_df2[[
+                        TIER, market_column, graph_col,
+                        'Score', 'Tier Rank'
+                    ]],
                     hide_index=True, use_container_width=True
                 )
 
@@ -356,25 +362,23 @@ with tab4:
 
         with col2:
             market_removal = st.multiselect(
-                "**Select Markets to Filter Out from Both Control & Test**",
-                options=list(set(mm_df[tier_mask]['Control Market Name']))
+                "**Select Markets to Filter Out From Test**",
+                options=list(set(mm_df[tier_mask]['Test Market Name']))
             )
-
-            removal_mask = (mm_df['Control Market Name'].isin(market_removal)) | \
-                               (mm_df['Test Market Name'].isin(market_removal))
+            removal_mask = (mm_df['Test Market Name'].isin(market_removal))
 
         with col3:
             specific_markets = st.multiselect(
-                "**Select Specific Control and Test Markets**",
-                options= list(set(mm_df[tier_mask & ~removal_mask]['Control Market Name']))
+                "**Select Specific Test Markets**",
+                options= list(set(mm_df[tier_mask & ~removal_mask]['Test Market Name']))
             )
-            spec_mask = mm_df['Control Market Name'].isin(specific_markets) if \
-                specific_markets else ~mm_df['Control Market Name'].isin([])
+            spec_mask = mm_df['Test Market Name'].isin(specific_markets) if \
+                specific_markets else ~mm_df['Test Market Name'].isin([])
 
         with col4:
             num_pairs = st.number_input(
                 '**Number of Test & Control Market Pairs**',
-                min_value=1, max_value=10, value= 5 if len(specific_markets) == 0 else len(specific_markets)
+                min_value=1, max_value=10, value=6 if len(specific_markets) == 0 else len(specific_markets)
             )
 
         mm_df = mm_df[tier_mask & ~removal_mask & spec_mask]
@@ -383,23 +387,23 @@ with tab4:
         with col2:
             if len(tier_filter) > 0:
                 counter = 0
-                control_utilized_markets, test_utilized_markets = [], []
+                utilized_markets = []
                 matched_df = pd.DataFrame()
                 max_counter = num_pairs*len(tier_filter) if len(specific_markets) == 0 else \
                     len(specific_markets)*num_pairs
                 while counter < max_counter:
-                    control_market_mask = (~mm_df['Control Market Name'].isin(control_utilized_markets))
-                    test_utilized_mask = (~mm_df['Test Market Name'].isin(test_utilized_markets))
-                    mm_df1 = mm_df[control_market_mask & test_utilized_mask]
+
+                    control_market_mask = (~mm_df['Control Market Name'].isin(utilized_markets))
+                    test_market_mask = (~mm_df['Test Market Name'].isin(utilized_markets))
+
+                    mm_df1 = mm_df[control_market_mask & test_market_mask]
                     mm_df1['Rank'] = mm_df1.groupby(['Tier']).cumcount()+1
                     matched_df = pd.concat([
                         matched_df,
                         mm_df1[mm_df1['Rank'] == 1]
                     ], axis=0)
-                    control_utilized_markets.extend(
-                      [c for c in mm_df1[mm_df1['Rank'] == 1]['Control Market Name']]
-                    )
-                    test_utilized_markets.extend(
+                    utilized_markets.extend(
+                      [c for c in mm_df1[mm_df1['Rank'] == 1]['Control Market Name']] +
                       [c for c in mm_df1[mm_df1['Rank'] == 1]['Test Market Name']]
                     )
                     counter += len(tier_filter) if len(specific_markets) == 0 else len(specific_markets)
@@ -410,6 +414,7 @@ with tab4:
                     f"<h5 style='text-align: center; color: black;'>Matched Markets Based on Selected Criteria</h5>",
                     unsafe_allow_html=True
                 )
+                matched_df = matched_df.drop('Rank', axis=1)
                 st.dataframe(
                     matched_df.sort_values(
                         by='Tier',
