@@ -107,11 +107,11 @@ class MatchedMarketScoring:
                 markets = pd.DataFrame(
                     {
                         'Tier': [t] * len(market_dist),
-                        'Control Market Identifier': [market_tier[f'{self.market_column}'].iloc[i]] * len(market_dist),
-                        'Control Market Name': [market_tier[f"{self.market_column.replace('Code', 'Name')}"].iloc[i]] * len(market_dist),
-                        'Test Market Identifier':  [i for i in market_tier[f'{self.market_column}']],
-                        'Test Market Name': [i for i in market_tier[f"{self.market_column.replace('Code', 'Name')}"]],
-                        'Distance': list(np.matmul(rank, self.feature_weights))
+                        'Test Market Identifier': [market_tier[f'{self.market_column}'].iloc[i]] * len(market_dist),
+                        'Test Market Name': [market_tier[f"{self.market_column.replace('Code', 'Name')}"].iloc[i]] * len(market_dist),
+                        'Control Market Identifier':  [i for i in market_tier[f'{self.market_column}']],
+                        'Control Market Name': [i for i in market_tier[f"{self.market_column.replace('Code', 'Name')}"]],
+                        'Similarity Index': list(np.matmul(rank, self.feature_weights))
                     }
                 )
                 similar_markets = pd.concat([similar_markets, markets], axis=0)
@@ -169,4 +169,3 @@ def calculate_tier(pct_rank, num_tiers):
         if pct_rank <= threshold:
             return tier
     return tiers[-1]
-
