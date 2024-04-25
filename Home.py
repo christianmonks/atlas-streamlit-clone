@@ -45,7 +45,9 @@ with col3:
 
 # Current working directory
 cd = os.getcwd()
-world_country_df = pd.read_csv(join(cd, 'data', 'mmt_world_country.csv'))
+world_country_df = pd.read_csv(
+    join(cd, 'data', 'mmt_world_country.csv')
+)
 
 # initialize session state
 if 'mm' not in st.session_state:
@@ -134,7 +136,10 @@ with tab2:
                 agg_kpi_df = None
                 kpi_columns = [i for i in list(kpi_df) if 'kpi' in i.lower()]
                 kpi_column = st.selectbox(
-                    "**Select a KPI Column to Rank Markets By**", options=kpi_columns
+                    label="**Select a KPI Column to Rank Markets By**",
+                    options=kpi_columns,
+                    help="Choose a Key Performance Indicator (KPI) column from the available options. "
+                         "Markets will be grouped into tiers based on the performance of the selected KPI column."
                 )
 
                 audience_columns = [i for i in list(audience_df) if 'audience' in i.lower()]
@@ -142,7 +147,9 @@ with tab2:
                 market_column = DMA_CODE if market_level == 'DMA' else COUNTRY_CODE
 
                 rename_dict = {
-                    'DMA_CODE': DMA_CODE, 'COUNTRY_CODE': COUNTRY_CODE, 'COUNTRY_NAME': COUNTRY_NAME
+                    'DMA_CODE': DMA_CODE,
+                    'COUNTRY_CODE': COUNTRY_CODE,
+                    'COUNTRY_NAME': COUNTRY_NAME
                 }
 
                 kpi_df = kpi_df.rename(columns=lambda col: rename_dict.get(col, col))
@@ -152,7 +159,9 @@ with tab2:
                 if is_numeric_dtype(kpi_df[kpi_column]):
                     with col2:
                         num_tiers = st.number_input(
-                            min_value=1, max_value=10, value=4, label='**Number of KPI Tiers**'
+                            min_value=1, max_value=10, value=4, label='**Number of KPI Tiers**',
+                            help="If your KPI column is numeric, choose the number of tiers into which "
+                                 "markets can be grouped based on its performance."
                         )
                         agg_kpi_df = kpi_df.groupby(market_column)[[kpi_column]].sum().reset_index()
                         agg_kpi_df[PERCENT_RANK] = agg_kpi_df[kpi_column].rank(pct=True)
@@ -179,9 +188,11 @@ with tab2:
                     for i, v in enumerate(dma_files)
                 }
                 dma_included = st.multiselect(
-                    '**Select DMA Census Data to Include**',
+                    label='**Select DMA Census Data to Include**',
                     options=list(dma_dfs.keys()),
-                    default=DEFAULT_DMA
+                    default=DEFAULT_DMA,
+                    help="Choose additional DMA census datasets to include alongside"
+                         " your audience dataset for creating a Market Score."
                 )
                 dma_data = generate_dma_data(dma_dfs, dma_included)
                 df = audience_df.merge(dma_data, on=market_column, how='inner').merge(
@@ -207,9 +218,10 @@ with tab2:
             df = df.rename(columns=cov_columns)
             cov_columns = [v for k, v in cov_columns.items()]
             included_cov = st.multiselect(
-                '**Select Covariate Variables to Include**',
+                label='**Select Demographic Factors to Include or Exclude**',
                 options=cov_columns,
-                default=cov_columns
+                default=cov_columns,
+                help="Choose specific demographic factors to include or exclude from your analysis."
             )
 
             df_columns = [COUNTRY_CODE, COUNTRY_NAME] + included_cov + audience_columns + [kpi_column, TIER] if \
@@ -217,12 +229,12 @@ with tab2:
             df = df[df_columns]
             if st.checkbox("View Merged KPI, Audiences and Market Data"):
                 st.dataframe(df, hide_index=True)
-            st.success("Successfully Merged KPI, Audiences and Market data. Review the merged data below.")
+            st.success("Successfully Merged KPI, Audiences, and Market data. Review the Merged data below.")
 
     if agg_kpi_df is not None:
-        bt_run_market_ranking = st.button(label="**Confirm and Run Market Ranking**")
+        bt_run_market_ranking = st.button(label="**Confirm and Run Market Ranking 🏃‍➡**")
         if bt_run_market_ranking:
-            with st.spinner(text="Running ML model to calculate factor weights..."):
+            with st.spinner(text="Running ML Model to Calculate Market Scoring & Matching..."):
                 mm = MatchedMarketScoring(
                     df=df,
                     audience_columns=audience_columns,
@@ -232,7 +244,7 @@ with tab2:
                     market_column=market_column
                 )
                 st.session_state.mm = mm
-            st.success("Successfully Ran Market Scoring & Matching")
+            st.success("Successfully Ran Market Scoring & Matching ✅")
     st.markdown("***")
     st.markdown(
         "If you have any questions about the KPI or Audience data required, please reach out to Media Analytics " \
@@ -241,8 +253,7 @@ with tab2:
 
 # tab3: Market Rankings & Insights
 with tab3:
-    if st.session_state.mm is not None:
-
+    if st.session_state.mm and kpi_df is not None and audience_df is not None:
         mm = st.session_state.mm
         display_df1 = mm.fi[[FEATURE, WEIGHT]].head(10)
         display_df1[WEIGHT] = display_df1[WEIGHT]/display_df1[WEIGHT].sum()
@@ -250,17 +261,23 @@ with tab3:
         col1, col2, col3, col4 = st.columns([.25, .25, .5,.25], gap='small')
         with col2:
             top_n = st.number_input(
-                '**Top N Markets**', min_value=1, max_value=10, value=4
+                label='**Top Markets Per Tier**',
+                min_value=1,
+                max_value=10,
+                value=4,
+                help="Choose the number of top markets you want displayed per tier."
             )
         with col3:
             tier_filter = st.multiselect(
-                label='**Tier Filter**', options=set(mm.ranking_df[TIER]),
-                default=set(mm.ranking_df[TIER])
+                label='**Tier Filter**',
+                options=set(mm.ranking_df[TIER]),
+                default=set(mm.ranking_df[TIER]),
+                help="Choose which tiers to include or exclude from the display."
             )
-        st.write("")
 
+        st.write("")
         if market_level == 'DMA':
-            with st.expander("**DMA Heat Map**", expanded=True):
+            with st.expander("**DMA Market Score Heat Map**", expanded=True):
                 with open("dma.json") as geofile:
                     source_geo = json.load(geofile)
                 perf_df = mm.ranking_df.reset_index(drop=True)
@@ -277,11 +294,11 @@ with tab3:
                     hover_data=[DMA_NAME],
                     height=1000,
                     width=1200,
-                    title=" <span style='font-size:30px;color:black;'>DMA Market Score Heat Map</span>",
+                    title=" <span style='font-size:30px;color:black;'>DMA Market Score Heat Map </span>",
                 )
                 fig_heat.update_layout(
                     title_x=0.375,
-                    title_y=0.85
+                    title_y=0.9
                 )
                 st.plotly_chart(
                     fig_heat, theme='streamlit', use_container_width=True
@@ -289,7 +306,7 @@ with tab3:
 
 
         with st.expander(
-                f"**Socioeconomic Weights for {kpi_column.title().replace('_', ' ')} & Market Rankings**", expanded=True
+                f"**Socioeconomic Weights for {kpi_column.replace('KPI', '').title().replace('_', ' ')} & Market Rankings**", expanded=True
         ):
             col1, col2, col3 = st.columns([.2, 1.5, 1.75])
             with col2:
@@ -298,7 +315,7 @@ with tab3:
                     values=WEIGHT,
                     names=FEATURE,
                     color=FEATURE,
-                    title=f"Socioeconomic Feature Weights for {kpi_column.title().replace('_', ' ')} Tiers",
+                    title=f"Socioeconomic Feature Weights for {kpi_column.replace('KPI', '').title().replace('_', ' ')} Tiers",
                     width=600,
                     height=500,
                 )
@@ -310,9 +327,7 @@ with tab3:
                 display_df2 = display_df2[
                     (display_df2[TIER].isin(tier_filter)) &
                     (display_df2['Tier Rank'] <= top_n)
-                ].sort_values(
-                    ['Tier Rank'],  ascending=True
-                )
+                ].sort_values(by=[TIER, 'Score'], ascending=[False, True])
                 graph_col = DMA_NAME if market_level == 'DMA' else COUNTRY_NAME
                 fig_ranking = px.bar(
                     display_df2,
@@ -320,7 +335,7 @@ with tab3:
                     y=graph_col,
                     orientation='h',  # horizontal bar chart
                     labels={graph_col: 'Market Rank', SCORE: 'Market Score'},
-                    title=f"Top {top_n} Markets based on {kpi_column.title().replace('_', ' ')} Score",
+                    title=f"Top {top_n} Markets Per Tier Based on {kpi_column.replace('KPI', '').title().replace('_', ' ')} Score",
                     width=600,
                     height=500,
                     color=TIER
@@ -331,14 +346,17 @@ with tab3:
             col1, col2, col3 = st.columns([1, 1.5, 1])
             with col2:
                 st.markdown(
-                    f"<h5 style='text-align: center; color: black;'>Top {top_n} Markets based on {kpi_column.title().replace('_', ' ')} Score</h5>",
+                    f"<h5 style='text-align: center; color: black;'>Top {top_n} "
+                    f"Markets Per Tier Based on {kpi_column.replace('KPI', '').title().replace('_', ' ')} Score</h5>",
                     unsafe_allow_html=True
                 )
                 st.dataframe(
                     display_df2[[
                         TIER, market_column, graph_col,
                         'Score', 'Tier Rank'
-                    ]],
+                    ]].sort_values(
+                        by=[TIER, 'Score'], ascending=[True, False]
+                    ),
                     hide_index=True, use_container_width=True
                 )
 
@@ -347,30 +365,33 @@ with tab3:
 
 # tab4: Matched Markets
 with tab4:
-    if st.session_state.mm is not None:
+    if st.session_state.mm and kpi_df is not None and audience_df is not None:
         mm = st.session_state.mm
         mm_df = mm.similar_markets
 
-        col1, col2, col3, col4 = st.columns([1, 1, 1, 1], gap='small')
+        col1, col2, col3, col4 = st.columns([1, 1, 1, .6], gap='small')
         with col1:
             tier_filter = st.multiselect(
-                "**Select Relevant Tiers**",
+                label="**Select Tiers for Identifying Similar Matched Markets***",
                 options=list(set(mm_df['Tier'])),
-                default=list(set(mm_df['Tier']))
+                default=list(set(mm_df['Tier'])),
+                help="Choose the tiers you want to use for identifying similar matched markets."
             )
             tier_mask = mm_df['Tier'].isin(tier_filter)
 
         with col2:
             market_removal = st.multiselect(
-                "**Select Markets to Filter Out From Test**",
-                options=list(set(mm_df[tier_mask]['Test Market Name']))
+                label="**Select Markets to Exclude from Test**",
+                options=list(set(mm_df[tier_mask]['Test Market Name'])),
+                help="Choose markets that you want to exclude from matched market pairing."
             )
             removal_mask = (mm_df['Test Market Name'].isin(market_removal))
 
         with col3:
             specific_markets = st.multiselect(
-                "**Select Specific Test Markets**",
-                options= list(set(mm_df[tier_mask & ~removal_mask]['Test Market Name']))
+                label="**Select Specific Test Markets**",
+                options=list(set(mm_df[tier_mask & ~removal_mask]['Test Market Name'])),
+                help="Choose specific test markets to include for matched market pairing."
             )
             spec_mask = mm_df['Test Market Name'].isin(specific_markets) if \
                 specific_markets else ~mm_df['Test Market Name'].isin([])
@@ -378,7 +399,10 @@ with tab4:
         with col4:
             num_pairs = st.number_input(
                 '**Number of Test & Control Market Pairs**',
-                min_value=1, max_value=10, value=6 if len(specific_markets) == 0 else len(specific_markets)
+                min_value=1,
+                max_value=10,
+                value=6 if len(specific_markets) == 0 else len(specific_markets),
+                help="Specify the number of test and control market pairs to generate."
             )
 
         mm_df = mm_df[tier_mask & ~removal_mask & spec_mask]
@@ -403,7 +427,7 @@ with tab4:
                         mm_df1[mm_df1['Rank'] == 1]
                     ], axis=0)
                     utilized_markets.extend(
-                      [c for c in mm_df1[mm_df1['Rank'] == 1]['Control Market Name']] +
+                      [c for c in mm_df1[mm_df1['Rank'] == 1]['Control Market Name']] + \
                       [c for c in mm_df1[mm_df1['Rank'] == 1]['Test Market Name']]
                     )
                     counter += len(tier_filter) if len(specific_markets) == 0 else len(specific_markets)
@@ -411,9 +435,10 @@ with tab4:
                 st.write("")
                 st.write("")
                 st.markdown(
-                    f"<h5 style='text-align: center; color: black;'>Matched Markets Based on Selected Criteria</h5>",
+                    f"<h5 style='text-align: center; color: black;'>Matched Similar Markets</h5>",
                     unsafe_allow_html=True
                 )
+
                 matched_df = matched_df.drop('Rank', axis=1)
                 st.dataframe(
                     matched_df.sort_values(
@@ -422,6 +447,5 @@ with tab4:
                         hide_index=True,
                         use_container_width=True
                 )
-
     else:
         st.error('Please Return to the Previous Tab and Upload Audience and KPI Data', icon="🚨")
