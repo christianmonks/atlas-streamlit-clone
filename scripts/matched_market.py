@@ -77,10 +77,11 @@ class MatchedMarketScoring:
 
         # calculate scores
         score_df = df[model_columns].copy()
+        if 'Cpm Cpm' in score_df.columns:
+            score_df['Cpm Cpm'] = 1 / score_df['Cpm Cpm']
         scaler = MinMaxScaler()
         X_norm = scaler.fit_transform(score_df)
         scores = np.matmul(X_norm, feature_weights)
-
         ranking_df = pd.DataFrame(X_norm, columns=model_columns)
         ranking_df[SCORE] = list(scores)
 
@@ -134,7 +135,7 @@ def generate_dma_data(
     )
 
     dataframes = {
-        k: v for k, v in dma_data.items() if k != 'Population DMA'
+        k: v for k, v in dma_data.items() if k != 'CPM DMA'
     }
 
     if len(included_datasets) > 0:
@@ -142,19 +143,16 @@ def generate_dma_data(
             k: v for k, v in dataframes.items() if k in included_datasets
         }
 
-    base = dma_data.get('Population DMA')
+    base = dma_data.get('CPM DMA')
     for n, df in dataframes.items():
         print(f'Adding in DataFrame: {n}')
         nc = n.replace("DMA", "").strip()
-        removed_cols = ['universe', 'male_total', 'female_total', 'total']
-        columns_to_drop = [c for c in removed_cols if c in list(df)]
-        df = df.drop(columns=columns_to_drop)
         if 'Median' not in n:
             df.columns = [f"{k}_{nc.lower().replace(' ','_')}" if k not in [
                 DMA_CODE, DMA_NAME
             ] else k for k in list(df)]
         else:
-            df = df.rename(columns={'median':nc})
+            df = df.rename(columns={'median': nc})
         base = base.merge(
             df, on=[DMA_CODE, DMA_NAME], how='left'
         )
