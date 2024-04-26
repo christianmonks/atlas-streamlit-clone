@@ -178,13 +178,13 @@ with tab2:
                 dma_path = join(cd, 'data', 'census_dma')
                 dma_files = [
                     f for f in os.listdir(dma_path) if \
-                    os.path.isfile(os.path.join(dma_path, f)) and f != '.DS_Store'
+                    os.path.isfile(os.path.join(dma_path, f)) and f != '.DS_Store' and f in INCLUDE_DMA
                 ]
+
                 dma_dfs = {
                     v.replace('.csv', '').replace('_', ' ').title().replace('Dma', 'DMA').replace(
-                        'Cpc Cpm', 'CPC CPM').replace('Gdp', 'GDP'): pd.read_csv(
-                        join(dma_path, v)
-                    ).drop('Unnamed: 0', axis=1)
+                        'Cpm', 'CPM').replace('Gdp', 'GDP'): pd.read_csv(
+                        join(dma_path, v), usecols=DMA_COLUMNS[v])
                     for i, v in enumerate(dma_files)
                 }
                 dma_included = st.multiselect(
@@ -374,7 +374,7 @@ with tab4:
             tier_filter = st.multiselect(
                 label="**Select Tiers for Identifying Similar Matched Markets***",
                 options=list(set(mm_df['Tier'])),
-                default=list(set(mm_df['Tier'])),
+                default=['Tier 1'],
                 help="Choose the tiers you want to use for identifying similar matched markets."
             )
             tier_mask = mm_df['Tier'].isin(tier_filter)
@@ -398,15 +398,15 @@ with tab4:
 
         with col4:
             num_pairs = st.number_input(
-                '**Number of Test & Control Market Pairs**',
+                '**Number of Market Pairs**',
                 min_value=1,
                 max_value=10,
-                value=6 if len(specific_markets) == 0 else len(specific_markets),
+                value=5 if len(specific_markets) == 0 else len(specific_markets),
                 help="Specify the number of test and control market pairs to generate."
             )
 
         mm_df = mm_df[tier_mask & ~removal_mask & spec_mask]
-        col1, col2, col3 = st.columns([1, 3, 1], gap='medium')
+        col1, col2, col3 = st.columns([1, 4, 1], gap='medium')
 
         with col2:
             if len(tier_filter) > 0:
@@ -435,7 +435,7 @@ with tab4:
                 st.write("")
                 st.write("")
                 st.markdown(
-                    f"<h5 style='text-align: center; color: black;'>Matched Similar Markets</h5>",
+                    f"<h5 style='text-align: center; color: black;'>Matched Markets based on Similarity Index</h5>",
                     unsafe_allow_html=True
                 )
 
