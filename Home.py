@@ -420,7 +420,9 @@ with tab4:
                     control_market_mask = (~mm_df['Control Market Name'].isin(utilized_markets))
                     test_market_mask = (~mm_df['Test Market Name'].isin(utilized_markets))
 
-                    mm_df1 = mm_df[control_market_mask & test_market_mask]
+                    mm_df1 = mm_df[control_market_mask & test_market_mask].sort_values(
+                        by='Similarity Index',ascending=True
+                    )
                     mm_df1['Rank'] = mm_df1.groupby(['Tier']).cumcount()+1
                     matched_df = pd.concat([
                         matched_df,
