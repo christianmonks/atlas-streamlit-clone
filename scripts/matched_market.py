@@ -112,7 +112,8 @@ class MatchedMarketScoring:
                         'Test Market Name': [market_tier[f"{self.market_column.replace('Code', 'Name')}"].iloc[i]] * len(market_dist),
                         'Control Market Identifier':  [i for i in market_tier[f'{self.market_column}']],
                         'Control Market Name': [i for i in market_tier[f"{self.market_column.replace('Code', 'Name')}"]],
-                        'Similarity Index': list(np.matmul(rank, self.feature_weights))
+                        'Similarity Index': list(np.matmul(rank, self.feature_weights)),
+                        'Test Market Score': [market_tier[SCORE].iloc[i]] * len(market_dist)
                     }
                 )
                 similar_markets = pd.concat([similar_markets, markets], axis=0)

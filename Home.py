@@ -421,13 +421,15 @@ with tab4:
                     test_market_mask = (~mm_df['Test Market Name'].isin(utilized_markets))
 
                     mm_df1 = mm_df[control_market_mask & test_market_mask].sort_values(
-                        by='Similarity Index',ascending=True
-                    )
+                        by=['Test Market Score', 'Similarity Index'], ascending=[False, True])
+
                     mm_df1['Rank'] = mm_df1.groupby(['Tier']).cumcount()+1
+
                     matched_df = pd.concat([
                         matched_df,
                         mm_df1[mm_df1['Rank'] == 1]
                     ], axis=0)
+
                     utilized_markets.extend(
                       [c for c in mm_df1[mm_df1['Rank'] == 1]['Control Market Name']] + \
                       [c for c in mm_df1[mm_df1['Rank'] == 1]['Test Market Name']]
@@ -441,7 +443,7 @@ with tab4:
                     unsafe_allow_html=True
                 )
 
-                matched_df = matched_df.drop('Rank', axis=1)
+                matched_df = matched_df.drop(['Rank', 'Test Market Score'], axis=1)
                 st.dataframe(
                     matched_df.sort_values(
                         by='Tier',
