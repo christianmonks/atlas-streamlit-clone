@@ -46,8 +46,10 @@ with col3:
 # Current working directory
 cd = os.getcwd()
 world_country_df = pd.read_csv(
-    join(cd, 'data', 'mmt_world_country.csv')
+    join(cd, 'data', 'mmt_world_country_1.csv')
 )
+
+world_country_df = world_country_df.loc[:, ~world_country_df.columns.str.contains('^Unnamed')]
 
 # initialize session state
 if 'mm' not in st.session_state:
@@ -205,7 +207,7 @@ with tab2:
                 )
 
             null_percentage = (df.isnull().sum() / len(df)) * 100
-            columns_to_drop = null_percentage[null_percentage > 50].index
+            columns_to_drop = null_percentage[null_percentage > 10].index
             df = df.drop(columns=columns_to_drop)
 
             cov_columns = [c for c in list(dma_data) if (c not in [DMA_NAME, DMA_CODE]) and (c in list(df))] if market_level == 'DMA' else \
@@ -220,7 +222,7 @@ with tab2:
             included_cov = st.multiselect(
                 label='**Select Demographic Factors to Include or Exclude**',
                 options=cov_columns,
-                default=cov_columns,
+                default= cov_columns if market_level == 'DMA' else DEFAULT_WORLD_COLS,
                 help="Choose specific demographic factors to include or exclude from your analysis."
             )
 
