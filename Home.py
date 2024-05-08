@@ -175,9 +175,11 @@ with tab2:
             if market_level == 'DMA':
                 df = audience_df.merge(us_dma_df, on=market_column, how='inner').merge(
                     agg_kpi_df, on=market_column, how='inner')
+                default_columns = DEFAULT_DMA_COLS
             else:
                 df = audience_df.merge(world_country_df, on=market_column, how='inner').merge(
                     agg_kpi_df, on=market_column, how='inner')
+                default_columns = DEFAULT_WORLD_COLS
 
             null_percentage = (df.isnull().sum() / len(df)) * 100
             columns_to_drop = null_percentage[null_percentage > 10].index
@@ -199,8 +201,8 @@ with tab2:
                 corr_vars = [i for i in corr[corr[kpi_column] > VARIABLE_CORRELATION_THRESHOLD]['index'].tolist() \
                              if i != kpi_column and i != 'Universe']
             else:
-                # need to set default cols for DMA and Countries
-                corr_vars = cov_columns
+                # use default columns for non-numeric KPI for now
+                corr_vars = default_columns
 
             included_cov = st.multiselect(
                 label='**Select Demographic Factors to Include or Exclude**',
