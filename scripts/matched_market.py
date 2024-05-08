@@ -122,42 +122,42 @@ class MatchedMarketScoring:
         ]
         return similar_markets
 
-def generate_dma_data(
-        dma_census_data: dict,
-        included_datasets=[],
-):
-    """
-    Generate DMA output based on census data.
-
-    :return: DataFrame containing DMA output
-    """
-    dma_data = copy.deepcopy(
-        dma_census_data
-    )
-
-    dataframes = {
-        k: v for k, v in dma_data.items() if k != 'CPM DMA'
-    }
-
-    if len(included_datasets) > 0:
-        dataframes = {
-            k: v for k, v in dataframes.items() if k in included_datasets
-        }
-
-    base = dma_data.get('CPM DMA')
-    for n, df in dataframes.items():
-        print(f'Adding in DataFrame: {n}')
-        nc = n.replace("DMA", "").strip()
-        if 'Median' not in n:
-            df.columns = [f"{k}_{nc.lower().replace(' ','_')}" if k not in [
-                DMA_CODE, DMA_NAME
-            ] else k for k in list(df)]
-        else:
-            df = df.rename(columns={'median': nc})
-        base = base.merge(
-            df, on=[DMA_CODE, DMA_NAME], how='left'
-        )
-    return base
+# def generate_dma_data(
+#         dma_census_data: dict,
+#         included_datasets=[],
+# ):
+#     """
+#     Generate DMA output based on census data.
+#
+#     :return: DataFrame containing DMA output
+#     """
+#     dma_data = copy.deepcopy(
+#         dma_census_data
+#     )
+#
+#     dataframes = {
+#         k: v for k, v in dma_data.items() if k != 'CPM DMA'
+#     }
+#
+#     if len(included_datasets) > 0:
+#         dataframes = {
+#             k: v for k, v in dataframes.items() if k in included_datasets
+#         }
+#
+#     base = dma_data.get('CPM DMA')
+#     for n, df in dataframes.items():
+#         print(f'Adding in DataFrame: {n}')
+#         nc = n.replace("DMA", "").strip()
+#         if 'Median' not in n:
+#             df.columns = [f"{k}_{nc.lower().replace(' ','_')}" if k not in [
+#                 DMA_CODE, DMA_NAME
+#             ] else k for k in list(df)]
+#         else:
+#             df = df.rename(columns={'median': nc})
+#         base = base.merge(
+#             df, on=[DMA_CODE, DMA_NAME], how='left'
+#         )
+#     return base
 
 def calculate_tier(pct_rank, num_tiers):
     interval = 1 / num_tiers

@@ -1,21 +1,13 @@
 import json
-import numpy as np
 import pandas as pd
 import streamlit as st
 import plotly.express as px
 import os
-
 from os.path import join
 from pandas.api.types import is_numeric_dtype
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV
-from sklearn.preprocessing import MinMaxScaler
-from plotly.offline import init_notebook_mode, iplot
-
 from scripts.utils import *
 from scripts.constants import *
-from scripts.matched_market import MatchedMarketScoring, \
-    calculate_tier, generate_dma_data
+from scripts.matched_market import MatchedMarketScoring, calculate_tier
 
 # Page Config
 st.set_page_config(
@@ -47,6 +39,10 @@ with col3:
 cd = os.getcwd()
 world_country_df = pd.read_csv(
     join(cd, 'data', 'mmt_world_country_1.csv')
+)
+
+us_dma_df = pd.read_csv(
+    join(cd, 'data', 'mmt_us_dma.csv')
 )
 
 world_country_df = world_country_df.loc[:, ~world_country_df.columns.str.contains('^Unnamed')]
@@ -177,52 +173,39 @@ with tab2:
             st.error('Please Return to the Previous Expander and Upload Audience and KPI Data', icon="🚨")
         else:
             if market_level == 'DMA':
-                dma_path = join(cd, 'data', 'census_dma')
-                dma_files = [
-                    f for f in os.listdir(dma_path) if \
-                    os.path.isfile(os.path.join(dma_path, f)) and f != '.DS_Store' and f in INCLUDE_DMA
-                ]
-
-                dma_dfs = {
-                    v.replace('.csv', '').replace('_', ' ').title().replace('Dma', 'DMA').replace(
-                        'Cpm', 'CPM').replace('Gdp', 'GDP'): pd.read_csv(
-                        join(dma_path, v), usecols=DMA_COLUMNS[v])
-                    for i, v in enumerate(dma_files)
-                }
-                dma_included = st.multiselect(
-                    label='**Select DMA Census Data to Include**',
-                    options=list(dma_dfs.keys()),
-                    default=DEFAULT_DMA,
-                    help="Choose additional DMA census datasets to include alongside"
-                         " your audience dataset for creating a Market Score."
-                )
-                dma_data = generate_dma_data(dma_dfs, dma_included)
-                df = audience_df.merge(dma_data, on=market_column, how='inner').merge(
-                    agg_kpi_df, on=market_column, how='inner'
-                )
-
+                df = audience_df.merge(us_dma_df, on=market_column, how='inner').merge(
+                    agg_kpi_df, on=market_column, how='inner')
             else:
                 df = audience_df.merge(world_country_df, on=market_column, how='inner').merge(
-                    agg_kpi_df, on=market_column, how='inner'
-                )
+                    agg_kpi_df, on=market_column, how='inner')
 
             null_percentage = (df.isnull().sum() / len(df)) * 100
             columns_to_drop = null_percentage[null_percentage > 10].index
             df = df.drop(columns=columns_to_drop)
 
-            cov_columns = [c for c in list(dma_data) if (c not in [DMA_NAME, DMA_CODE]) and (c in list(df))] if market_level == 'DMA' else \
+            cov_columns = [c for c in list(us_dma_df) if (c not in [DMA_NAME, DMA_CODE]) and (c in list(df))] if market_level == 'DMA' else \
                 [c for c in list(world_country_df) if (c not in [COUNTRY_CODE, COUNTRY_NAME]) and (c in list(df))]
 
             cov_columns = {
                 c: c.title().replace('_', ' ') for c in cov_columns
             }
-
             df = df.rename(columns=cov_columns)
             cov_columns = [v for k, v in cov_columns.items()]
+
+            # identify cov with corr > threshold for default setting
+            # remove Universe by default to prioritize target audiences
+            if is_numeric_dtype(kpi_df[kpi_column]):
+                corr = df[cov_columns + [kpi_column]].corr()[kpi_column].reset_index()
+                corr_vars = [i for i in corr[corr[kpi_column] > VARIABLE_CORRELATION_THRESHOLD]['index'].tolist() \
+                             if i != kpi_column and i != 'Universe']
+            else:
+                # need to set default cols for DMA and Countries
+                corr_vars = cov_columns
+
             included_cov = st.multiselect(
                 label='**Select Demographic Factors to Include or Exclude**',
                 options=cov_columns,
-                default= cov_columns if market_level == 'DMA' else DEFAULT_WORLD_COLS,
+                default=corr_vars if market_level == 'DMA' else DEFAULT_WORLD_COLS,
                 help="Choose specific demographic factors to include or exclude from your analysis."
             )
 
@@ -370,13 +353,14 @@ with tab4:
     if st.session_state.mm and kpi_df is not None and audience_df is not None:
         mm = st.session_state.mm
         mm_df = mm.similar_markets
+        default_tier = ['Tier 1'] if market_level == 'DMA' else None
 
         col1, col2, col3, col4 = st.columns([1, 1, 1, .6], gap='small')
         with col1:
             tier_filter = st.multiselect(
                 label="**Select Tiers for Identifying Similar Matched Markets***",
                 options=list(set(mm_df['Tier'])),
-                default=['Tier 1'],
+                default=default_tier,
                 help="Choose the tiers you want to use for identifying similar matched markets."
             )
             tier_mask = mm_df['Tier'].isin(tier_filter)
