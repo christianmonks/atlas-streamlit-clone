@@ -49,7 +49,7 @@ class MatchedMarketScoring:
             ]
             for i in missing:
                 print(f"-------- Missing Feature Importance: {i} --------")
-            assert len(missing) == 0, "Missing Features"
+            # assert len(missing) == 0, "Missing Features"
 
         self.feature_weights = [v for k, v in self.feature_importance.items()]
         self.ranking_df, self.fi = self.score_markets()

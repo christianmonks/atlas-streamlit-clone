@@ -5,12 +5,6 @@ import plotly.express as px
 import os
 from os.path import join
 from pandas.api.types import is_numeric_dtype
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV
-from sklearn.preprocessing import MinMaxScaler
-from plotly.offline import init_notebook_mode, iplot
-from copy import deepcopy
-
 from scripts.utils import *
 from scripts.constants import *
 from scripts.matched_market import (
@@ -306,6 +300,7 @@ with tab2:
                 options=cov_columns,
                 default=corr_vars,
                 help="Choose specific demographic factors to include or exclude from your analysis."
+            )
 
             df_columns = (
                 [COUNTRY_CODE, COUNTRY_NAME]
@@ -530,8 +525,8 @@ with tab4:
         with col1:
             tier_filter = st.multiselect(
                 label="**Select Tiers for Identifying Similar Matched Markets**",
-                options=list(set(mm_df[TIER])),
-                default=list(set(mm_df[TIER]))[0],
+                options=sorted(list(set(mm_df[TIER]))),
+                default=sorted(list(set(mm_df[TIER])))[0],
                 help="Choose the tiers you want to use for identifying similar matched markets.",
             )
             tier_mask = mm_df["KPI Tier"].isin(tier_filter)
@@ -660,105 +655,106 @@ with tab4:
 
                 with col3:
                     kpi_comp = kpi_df.merge(df[[market_column, TIER]], on=market_column)
-                    test = (
-                        kpi_comp[
-                            kpi_comp[market_column].isin(
-                                matched_df["Test Market Identifier"]
-                            )
-                        ]
-                        .groupby([date_column])[kpi_column]
-                        .sum()
-                        .reset_index()
-                        if len(date_columns) > 0
-                        else kpi_comp[
-                            kpi_comp[market_column].isin(
-                                matched_df["Test Market Identifier"]
-                            )
-                        ]
-                        .groupby(TIER)[kpi_column]
-                        .sum()
-                        .reset_index()
-                    )
+                    if is_numeric_dtype(kpi_df[kpi_column]):
+                        test = (
+                            kpi_comp[
+                                kpi_comp[market_column].isin(
+                                    matched_df["Test Market Identifier"]
+                                )
+                            ]
+                            .groupby([date_column])[kpi_column]
+                            .sum()
+                            .reset_index()
+                            if len(date_columns) > 0
+                            else kpi_comp[
+                                kpi_comp[market_column].isin(
+                                    matched_df["Test Market Identifier"]
+                                )
+                            ]
+                            .groupby(TIER)[kpi_column]
+                            .sum()
+                            .reset_index()
+                        )
 
-                    control = (
-                        kpi_comp[
-                            kpi_comp[market_column].isin(
-                                matched_df["Control Market Identifier"]
-                            )
-                        ]
-                        .groupby([date_column])[kpi_column]
-                        .sum()
-                        .reset_index()
-                        if len(date_columns) > 0
-                        else kpi_comp[
-                            kpi_comp[market_column].isin(
-                                matched_df["Control Market Identifier"]
-                            )
-                        ]
-                        .groupby(TIER)[kpi_column]
-                        .sum()
-                        .reset_index()
-                    )
+                        control = (
+                            kpi_comp[
+                                kpi_comp[market_column].isin(
+                                    matched_df["Control Market Identifier"]
+                                )
+                            ]
+                            .groupby([date_column])[kpi_column]
+                            .sum()
+                            .reset_index()
+                            if len(date_columns) > 0
+                            else kpi_comp[
+                                kpi_comp[market_column].isin(
+                                    matched_df["Control Market Identifier"]
+                                )
+                            ]
+                            .groupby(TIER)[kpi_column]
+                            .sum()
+                            .reset_index()
+                        )
 
-                    test = test.rename(columns={kpi_column: "Test Markets"})
-                    control = control.rename(columns={kpi_column: "Control Markets"})
+                        test = test.rename(columns={kpi_column: "Test Markets"})
+                        control = control.rename(columns={kpi_column: "Control Markets"})
 
-                    kpi_comp = (
-                        test.merge(control, on=[date_column], how="left")
-                        if len(date_columns) > 0
-                        else test.merge(control, on=[TIER], how="left")
-                    )
-                    kpi_comp = (
-                        pd.melt(
-                            kpi_comp,
-                            id_vars=[date_column],
-                            var_name="Market",
-                            value_name=kpi_column_clean,
+                        kpi_comp = (
+                            test.merge(control, on=[date_column], how="left")
+                            if len(date_columns) > 0
+                            else test.merge(control, on=[TIER], how="left")
                         )
-                        if len(date_columns) > 0
-                        else pd.melt(
-                            kpi_comp,
-                            id_vars=[TIER],
-                            var_name="Market",
-                            value_name=kpi_column_clean,
-                        )
-                    )
-
-                    if len(date_columns) > 0:
-                        kpi_comp[date_column] = pd.to_datetime(kpi_comp[date_column])
-                        kpi_comp = kpi_comp.sort_values(by=date_column, ascending=False)
-                        kpi_comp = kpi_comp.rename(
-                            columns={date_column: date_column.title()}
-                        )
-                        fig_comp = px.line(
-                            kpi_comp,
-                            x=date_column.title(),
-                            y=kpi_column_clean,
-                            color="Market",
-                            color_discrete_sequence=["blue", "red"],
-                            title="Historical KPI Volume: Control vs Test Markets",
-                        )
-                        fig_comp.update_layout(width=800, height=500)
-                        st.plotly_chart(
-                            fig_comp, theme="streamlit", use_container_width=True
-                        )
-                    else:
-                        fig_comp = (
-                            px.bar(
+                        kpi_comp = (
+                            pd.melt(
                                 kpi_comp,
-                                x="Market",
+                                id_vars=[date_column],
+                                var_name="Market",
+                                value_name=kpi_column_clean,
+                            )
+                            if len(date_columns) > 0
+                            else pd.melt(
+                                kpi_comp,
+                                id_vars=[TIER],
+                                var_name="Market",
+                                value_name=kpi_column_clean,
+                            )
+                        )
+
+                        if len(date_columns) > 0:
+                            kpi_comp[date_column] = pd.to_datetime(kpi_comp[date_column])
+                            kpi_comp = kpi_comp.sort_values(by=date_column, ascending=False)
+                            kpi_comp = kpi_comp.rename(
+                                columns={date_column: date_column.title()}
+                            )
+                            fig_comp = px.line(
+                                kpi_comp,
+                                x=date_column.title(),
                                 y=kpi_column_clean,
                                 color="Market",
                                 color_discrete_sequence=["blue", "red"],
-                                title=f"Historical {kpi_column_clean} Volume: Control vs Test Markets",
+                                title="Historical KPI Volume: Control vs Test Markets",
                             )
-                            .update_traces(marker_line_width=0)
-                            .update_layout(xaxis_showgrid=False, yaxis_showgrid=False)
-                        )
-                        fig_comp.update_layout(width=800, height=500)
-                        st.plotly_chart(
-                            fig_comp, theme="streamlit", use_container_width=True
-                        )
+                            fig_comp.update_layout(width=800, height=500)
+                            st.plotly_chart(
+                                fig_comp, theme="streamlit", use_container_width=True
+                            )
+                        else:
+                            fig_comp = (
+                                px.bar(
+                                    kpi_comp,
+                                    x="Market",
+                                    y=kpi_column_clean,
+                                    color="Market",
+                                    color_discrete_sequence=["blue", "red"],
+                                    title=f"Historical {kpi_column_clean} Volume: Control vs Test Markets",
+                                )
+                                .update_traces(marker_line_width=0)
+                                .update_layout(xaxis_showgrid=False, yaxis_showgrid=False)
+                            )
+                            fig_comp.update_layout(width=800, height=500)
+                            st.plotly_chart(
+                                fig_comp, theme="streamlit", use_container_width=True
+                            )
     else:
         st.error(
             "Please Return to the Previous Tab and Upload Audience and KPI Data",
