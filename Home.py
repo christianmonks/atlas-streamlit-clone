@@ -9,7 +9,7 @@ from scripts.utils import *
 from scripts.constants import *
 from scripts.matched_market import (
     MatchedMarketScoring,
-    calculate_tier,
+    calculate_tier
 )
 
 # Set page configuration
@@ -413,6 +413,9 @@ with tab3:
                     if v is not None:
                         feature_importance[k] = v
 
+        total_weight = sum([v for k,v in feature_importance.items()])
+        feature_importance = {k: v/total_weight for k,v in feature_importance.items()}
+
         mm1 = MatchedMarketScoring(
             df=df,
             audience_columns=audience_columns,
@@ -426,8 +429,9 @@ with tab3:
             run_model=False,
             feature_importance=feature_importance,
         )
+
         st.session_state.mm1 = mm1
-        display_df1 = mm1.fi[[FEATURE, WEIGHT]].head(10)
+        display_df1 = mm1.fi[[FEATURE, WEIGHT]]
         display_df1[WEIGHT] = display_df1[WEIGHT] / display_df1[WEIGHT].sum()
         display_df2 = mm1.ranking_df.reset_index(drop=True)
 
