@@ -8,8 +8,10 @@ RANK = "Rank"
 DMA_CODE = "DMA Code"
 COUNTRY_CODE = "Country Code"
 COUNTRY_NAME = "Country Name"
+STATE_CODE = "State Code"
+STATE_NAME = "State Name"
 DMA_NAME = "DMA Name"
-VARIABLE_CORRELATION_THRESHOLD = 0.5
+VARIABLE_CORRELATION_THRESHOLD = 0.3
 
 DEFAULT_DMA_COLS = [
   "GDP",
@@ -20,6 +22,9 @@ DEFAULT_DMA_COLS = [
   "Total Spanish Household",
   "Owner Occupied",
   "Default CPM",
+]
+
+DEFAULT_STATE_COLS = [
 ]
 
 DEFAULT_WORLD_COLS = [
