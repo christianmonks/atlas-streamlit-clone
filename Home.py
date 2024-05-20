@@ -14,7 +14,6 @@ from scripts.matched_market import (
 
 # Set page configuration
 st.set_page_config(page_title="MarketXBot", layout="wide")
-
 import streamlit_vertical_slider as svs
 
 # Add in logo to streamlit app
@@ -42,11 +41,15 @@ with col3:
 # Get current working directory and load in world demographic dataset.
 # Remove out unnamed column.
 cd = os.getcwd()
-world_country_df = pd.read_csv(join(cd, "data", "mmt_world_country_1.csv"))
-world_country_df = world_country_df.loc[
-    :, ~world_country_df.columns.str.contains("^Unnamed")
-]
+
 us_dma_df = pd.read_csv(join(cd, 'data', 'mmt_us_dma.csv'))
+state_df = pd.read_csv(join(cd, 'data', 'state_data.csv'))
+world_country_df = pd.read_csv(join(cd, "data", "mmt_world_country_1.csv"))
+
+us_dma_df = us_dma_df.loc[:, ~us_dma_df.columns.str.contains("^Unnamed")]
+world_country_df = world_country_df.loc[:, ~world_country_df.columns.str.contains("^Unnamed")]
+state_df = state_df.loc[:, ~state_df.columns.str.contains("^Unnamed")]
+
 
 # Initialize session state of matched market class.
 if "mm" not in st.session_state:
@@ -190,30 +193,28 @@ with tab2:
                 audience_columns = [
                     i for i in list(audience_df) if "audience" in i.lower()
                 ]
-                market_level = (
-                    "DMA"
-                    if len([c for c in list(kpi_df) if "dma" in c.lower()]) > 0
-                    else "World"
-                )
-                market_column = DMA_CODE if market_level == "DMA" else COUNTRY_CODE
 
-                # Find date column
+                columns_lower = [c.lower() for c in kpi_df.columns]
+
+                market_level = "DMA" if any("dma" in c for c in columns_lower) else \
+                    "State" if any("state" in c for c in columns_lower) else "World"
+
+                print(market_level)
+
+                market_column = DMA_CODE if market_level == "DMA" else\
+                    STATE_CODE if market_level == "State" else COUNTRY_CODE
+                market_name = market_column.split(' ')[0] + ' ' + 'Name'
+
                 rename_dict = {
-                    "DMA_CODE": DMA_CODE,
-                    "COUNTRY_CODE": COUNTRY_CODE,
-                    "COUNTRY_NAME": COUNTRY_NAME,
-                }
+                        "DMA_CODE": DMA_CODE,
+                        "COUNTRY_CODE": COUNTRY_CODE,
+                        "COUNTRY_NAME": COUNTRY_NAME,
+                    }
 
                 kpi_df = kpi_df.rename(columns=lambda col: rename_dict.get(col, col))
-                audience_df = audience_df.rename(
-                    columns=lambda col: rename_dict.get(col, col)
-                )
-                world_country_df = world_country_df.rename(
-                    columns=lambda col: rename_dict.get(col, col)
-                )
-                date_columns = [
-                    k for k in list(kpi_df) if k not in [market_column, kpi_column]
-                ]
+                audience_df = audience_df.rename(columns=lambda col: rename_dict.get(col, col))
+                world_country_df = world_country_df.rename(columns=lambda col: rename_dict.get(col, col))
+                date_columns = [k for k in list(kpi_df) if k not in [market_column, market_name, kpi_column]]
 
                 if is_numeric_dtype(kpi_df[kpi_column]):
                     with col2:
@@ -257,31 +258,25 @@ with tab2:
                 df = audience_df.merge(us_dma_df, on=market_column, how='inner').merge(
                     agg_kpi_df, on=market_column, how='inner')
                 default_columns = DEFAULT_DMA_COLS
-            else:
+            elif market_level == 'World':
                 df = audience_df.merge(world_country_df, on=market_column, how='inner').merge(
                     agg_kpi_df, on=market_column, how='inner')
                 default_columns = DEFAULT_WORLD_COLS
+            else:
+                df = audience_df.merge(state_df, on=market_column, how='inner').merge(
+                    agg_kpi_df, on=market_column, how='inner')
+                default_columns = DEFAULT_STATE_COLS
 
             null_percentage = (df.isnull().sum() / len(df)) * 100
             columns_to_drop = null_percentage[null_percentage > 10].index
             df = df.drop(columns=columns_to_drop)
 
-            cov_columns = (
-                [
-                    c
-                    for c in list(us_dma_df)
-                    if (c not in [DMA_NAME, DMA_CODE]) and (c in list(df))
-                ]
-                if market_level == "DMA"
-                else [
-                    c
-                    for c in list(world_country_df)
-                    if (c not in [COUNTRY_CODE, COUNTRY_NAME]) and (c in list(df))
-                ]
-            )
+            cov_columns = [
+                 c for c in list(us_dma_df if market_level == "DMA" else world_country_df)
+                if c not in [market_column, market_name] and c in list(df)
+             ]
 
             cov_columns = {c: c.title().replace("_", " ") for c in cov_columns}
-
             df = df.rename(columns=cov_columns)
             cov_columns = [v for k, v in cov_columns.items()]
 
@@ -289,8 +284,10 @@ with tab2:
             # remove Universe by default to prioritize target audiences
             if is_numeric_dtype(kpi_df[kpi_column]):
                 corr = df[cov_columns + [kpi_column]].corr()[kpi_column].reset_index()
-                corr_vars = [i for i in corr[corr[kpi_column] > VARIABLE_CORRELATION_THRESHOLD]['index'].tolist() \
-                             if i != kpi_column and i != 'Universe']
+                corr_vars = [
+                    i for i in corr[corr[kpi_column] > VARIABLE_CORRELATION_THRESHOLD]['index'].tolist() \
+                    if i != kpi_column and i != 'Universe'
+                ]
             else:
                 # use default columns for non-numeric KPI for now
                 corr_vars = default_columns
@@ -303,12 +300,7 @@ with tab2:
             )
 
             df_columns = (
-                [COUNTRY_CODE, COUNTRY_NAME]
-                + included_cov
-                + audience_columns
-                + [kpi_column, TIER]
-                if market_level != "DMA"
-                else [DMA_CODE, DMA_NAME]
+                [market_column, market_name]
                 + included_cov
                 + audience_columns
                 + [kpi_column, TIER]
@@ -332,16 +324,12 @@ with tab2:
                 mm = MatchedMarketScoring(
                     df=df,
                     audience_columns=audience_columns,
-                    display_columns=(
-                        [DMA_CODE, DMA_NAME]
-                        if market_level == "DMA"
-                        else [COUNTRY_CODE, COUNTRY_NAME]
-                    ),
+                    display_columns=[market_column, market_name],
                     covariate_columns=cov_columns,
                     market_column=market_column,
                 )
                 st.session_state.mm = mm
-            st.success("Successfully Ran Market Scoring & Matching  ✅")
+            st.success(" 🚀 Successfully Ran Market Scoring & Matching 🚀")
     st.markdown("***")
     st.markdown(
         "If you have any questions about the KPI or Audience data required, please reach out to Media Analytics "
@@ -419,11 +407,7 @@ with tab3:
         mm1 = MatchedMarketScoring(
             df=df,
             audience_columns=audience_columns,
-            display_columns=(
-                [DMA_CODE, DMA_NAME]
-                if market_level == "DMA"
-                else [COUNTRY_CODE, COUNTRY_NAME]
-            ),
+            display_columns=[market_column, market_name],
             covariate_columns=cov_columns,
             market_column=market_column,
             run_model=False,
@@ -451,7 +435,7 @@ with tab3:
                     range_color=(0, perf_df["Score"].max()),
                     scope="usa",
                     labels={"Score": "Market Score"},
-                    hover_data=[DMA_NAME],
+                    hover_data=[market_column],
                     height=1000,
                     width=1200,
                     title=" <span style='font-size:30px;color:black;'>DMA Market Score Heat Map </span>",
