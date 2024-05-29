@@ -317,12 +317,14 @@ with tab2:
             with st.spinner(
                 text="Running ML Model to Calculate Market Scoring & Matching..."
             ):
+                spend_cols = [c for c in list(df) if 'spend' in c.lower()]
                 mm = MatchedMarketScoring(
                     df=df,
                     audience_columns=audience_columns,
                     display_columns=[market_column, market_name],
                     covariate_columns=cov_columns,
                     market_column=market_column,
+                    scoring_removed_columns=spend_cols
                 )
                 st.session_state.mm = mm
             st.success(" 🚀 Successfully Ran Market Scoring & Matching 🚀")
@@ -400,6 +402,7 @@ with tab3:
         total_weight = sum([v for k,v in feature_importance.items()])
         feature_importance = {k: v/total_weight for k,v in feature_importance.items()}
 
+        spend_cols = [c for c in list(df) if 'spend' in c.lower()]
         mm1 = MatchedMarketScoring(
             df=df,
             audience_columns=audience_columns,
@@ -408,6 +411,7 @@ with tab3:
             market_column=market_column,
             run_model=False,
             feature_importance=feature_importance,
+            scoring_removed_columns=spend_cols
         )
 
         st.session_state.mm1 = mm1
@@ -521,7 +525,8 @@ with tab4:
                 options=list(set(mm_df[tier_mask]["Test Market Name"])),
                 help="Choose markets that you want to exclude from matched market pairing.",
             )
-            removal_mask = mm_df["Test Market Name"].isin(market_removal)
+            removal_mask = (mm_df["Test Market Name"].isin(market_removal)) | \
+                           (mm_df["Control Market Name"].isin(market_removal))
 
         with col3:
             specific_markets = st.multiselect(

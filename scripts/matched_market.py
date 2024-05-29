@@ -17,7 +17,7 @@ class MatchedMarketScoring:
         display_columns=[DMA_CODE, DMA_NAME],
         market_column=DMA_CODE,
         target_variable=TIER,
-        scoring_removed_columns = [],
+        scoring_removed_columns=[],
         run_model=True,
         feature_importance=None,
     ):
@@ -35,11 +35,13 @@ class MatchedMarketScoring:
         self.covariate_columns = covariate_columns
         self.audience_columns = audience_columns
         self.market_column = market_column
-        self.scoring_removed_columns = scoring_removed_columns
-
         self.model_columns = self.covariate_columns + self.audience_columns
         self.model_columns = [i for i in self.model_columns if i in list(self.df)]
 
+        self.scoring_removed_columns = scoring_removed_columns
+        if self.scoring_removed_columns:
+            for c in self.scoring_removed_columns:
+                print(f"-------- Column: {c} Removed from Market Scoring Purposes --------")
         if run_model:
             print("-------- Calculating Feature Importance --------")
             self.feature_importance = self.run_model()
@@ -139,7 +141,9 @@ class MatchedMarketScoring:
             market_tier = self.ranking_df[
                 self.ranking_df[self.target_variable] == t
             ].reset_index(drop=True)
-            market_dist = market_tier[self.model_columns]
+            market_dist = market_tier[
+                [c for c in self.model_columns if c not in self.scoring_removed_columns]
+            ]
 
             for i, v in market_dist.iterrows():
                 rank = market_dist.apply(lambda row: abs(v - row), axis=1)
@@ -165,7 +169,11 @@ class MatchedMarketScoring:
                                 f"{self.market_column.replace('Code', 'Name')}"
                             ]
                         ],
-                        "Similarity Index": list(np.matmul(rank, self.feature_weights)),
+                        "Similarity Index": list(
+                            np.matmul(rank, [
+                                v for c,v in self.feature_importance.items() if c not in self.scoring_removed_columns
+                            ])
+                        ),
                         "Test Market Score": [market_tier[SCORE].iloc[i]]
                         * len(market_dist),
                         "Control Market Score": [i for i in market_tier[SCORE]],
