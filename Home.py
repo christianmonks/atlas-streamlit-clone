@@ -42,12 +42,12 @@ with col3:
 # Remove out unnamed column.
 cd = os.getcwd()
 
-us_dma_df = pd.read_csv(join(cd, 'data', 'mmt_us_dma.csv'))
-state_df = pd.read_csv(join(cd, 'data', 'state_data.csv'))
-world_country_df = pd.read_csv(join(cd, "data", "mmt_world_country_1.csv"))
+dma_df = pd.read_csv(join(cd, 'data', 'mmt_dma_data.csv'))
+state_df = pd.read_csv(join(cd, 'data', 'mmt_state_data.csv'))
+cntry_df = pd.read_csv(join(cd, "data", "mmt_world_data.csv"))
 
-us_dma_df = us_dma_df.loc[:, ~us_dma_df.columns.str.contains("^Unnamed")]
-world_country_df = world_country_df.loc[:, ~world_country_df.columns.str.contains("^Unnamed")]
+dma_df = dma_df.loc[:, ~dma_df.columns.str.contains("^Unnamed")]
+cntry_df = cntry_df.loc[:, ~cntry_df.columns.str.contains("^Unnamed")]
 state_df = state_df.loc[:, ~state_df.columns.str.contains("^Unnamed")]
 
 
@@ -125,12 +125,13 @@ with tab2:
         with col1:
             # KPI data uploader.
             st.write("")
-            uploaded_file_kpi = st.file_uploader("**Upload KPI data**")
+            uploaded_file_kpi = st.file_uploader("**Upload Client KPI Data**")
             st.info(
                 """👆 To protect your data and privacy while demoing this prototype, please upload a .csv file first. 
                 Sample to try: [kpi_data_example.csv](https://drive.google.com/file/d/1n6gayg5VcWRCtJ5qVIfRwjc08WJmed3y/view?usp=sharing)."""
             )
             if uploaded_file_kpi is not None:
+
                 # Check if KPI data was uploaded, and check if there is KPI column.
                 kpi_df = pd.read_csv(uploaded_file_kpi)
                 kpi_column_exists = any("kpi" in v.lower() for v in kpi_df.columns)
@@ -146,7 +147,7 @@ with tab2:
         with col2:
             # Audience data uploader.
             st.write("")
-            uploaded_file_audience = st.file_uploader("**Upload Audience Data**")
+            uploaded_file_audience = st.file_uploader("**Upload Client Specific Data**")
             st.info(
                 """👆 To protect your data and privacy while demoing this prototype, please upload a .csv file first. 
                 Sample to try: [audience_data_example.csv](https://drive.google.com/file/d/1e57TDVk4LyjeLBSCHZ5I6eCeS3QX46FR/view?usp=sharing)."""
@@ -154,10 +155,7 @@ with tab2:
             if uploaded_file_audience is not None:
                 # Check if Audience data was uploaded, and search for audience columns.
                 audience_df = pd.read_csv(uploaded_file_audience)
-                audience_column_exists = any(
-                    "audience" in v.lower() for v in audience_df.columns
-                )
-                if (len(audience_df) > 0) & audience_column_exists:
+                if len(audience_df) > 0:
                     st.success(
                         f"Successfully Loaded Audience Data. Total of {len(audience_df)} Records. A Snapshot Is Provided Below."
                     )
@@ -190,19 +188,18 @@ with tab2:
                     kpi_column.replace("KPI", "").title().replace("_", " ")
                 )
 
-                audience_columns = [
-                    i for i in list(audience_df) if "audience" in i.lower()
-                ]
-
                 columns_lower = [c.lower() for c in kpi_df.columns]
 
                 market_level = "DMA" if any("dma" in c for c in columns_lower) else \
                     "State" if any("state" in c for c in columns_lower) else "World"
 
-                print(market_level)
-
                 market_column = DMA_CODE if market_level == "DMA" else\
                     STATE_CODE if market_level == "State" else COUNTRY_CODE
+
+                audience_columns = [
+                    i for i in list(audience_df) if market_level.lower() not in i.lower()
+                ]
+
                 market_name = market_column.split(' ')[0] + ' ' + 'Name'
 
                 rename_dict = {
@@ -213,9 +210,8 @@ with tab2:
 
                 kpi_df = kpi_df.rename(columns=lambda col: rename_dict.get(col, col))
                 audience_df = audience_df.rename(columns=lambda col: rename_dict.get(col, col))
-                world_country_df = world_country_df.rename(columns=lambda col: rename_dict.get(col, col))
-                date_columns = [k for k in list(kpi_df) if k not in [market_column, market_name, kpi_column]]
-
+                cntry_df = cntry_df.rename(columns=lambda col: rename_dict.get(col, col))
+                date_columns = [k for k in list(kpi_df) if k not in [market_column, market_name] + kpi_columns]
                 if is_numeric_dtype(kpi_df[kpi_column]):
                     with col2:
                         num_tiers = st.number_input(
@@ -255,11 +251,11 @@ with tab2:
             )
         else:
             if market_level == 'DMA':
-                df = audience_df.merge(us_dma_df, on=market_column, how='inner').merge(
+                df = audience_df.merge(dma_df, on=market_column, how='inner').merge(
                     agg_kpi_df, on=market_column, how='inner')
                 default_columns = DEFAULT_DMA_COLS
             elif market_level == 'World':
-                df = audience_df.merge(world_country_df, on=market_column, how='inner').merge(
+                df = audience_df.merge(cntry_df, on=market_column, how='inner').merge(
                     agg_kpi_df, on=market_column, how='inner')
                 default_columns = DEFAULT_WORLD_COLS
             else:
@@ -271,9 +267,9 @@ with tab2:
             columns_to_drop = null_percentage[null_percentage > 10].index
             df = df.drop(columns=columns_to_drop)
 
+            cov = list(dma_df) if market_level == "DMA" else (list(cntry_df) if market_level == "World" else list(state_df))
             cov_columns = [
-                 c for c in list(us_dma_df if market_level == "DMA" else world_country_df)
-                if c not in [market_column, market_name] and c in list(df)
+                 c for c in cov if c not in [market_column, market_name] and c in list(df)
              ]
 
             cov_columns = {c: c.title().replace("_", " ") for c in cov_columns}
@@ -467,7 +463,7 @@ with tab3:
                     (display_df2[TIER].isin(tier_filter))
                     & (display_df2["Tier Rank"] <= top_n)
                 ].sort_values(by=[TIER, "Score"], ascending=[False, True])
-                graph_col = DMA_NAME if market_level == "DMA" else COUNTRY_NAME
+                graph_col = DMA_NAME if market_level == "DMA" else STATE_NAME if market_level == "State" else COUNTRY_NAME
                 fig_ranking = px.bar(
                     display_df2,
                     x=SCORE,

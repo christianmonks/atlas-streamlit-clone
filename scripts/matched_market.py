@@ -17,6 +17,7 @@ class MatchedMarketScoring:
         display_columns=[DMA_CODE, DMA_NAME],
         market_column=DMA_CODE,
         target_variable=TIER,
+        scoring_removed_columns = [],
         run_model=True,
         feature_importance=None,
     ):
@@ -34,6 +35,7 @@ class MatchedMarketScoring:
         self.covariate_columns = covariate_columns
         self.audience_columns = audience_columns
         self.market_column = market_column
+        self.scoring_removed_columns = scoring_removed_columns
 
         self.model_columns = self.covariate_columns + self.audience_columns
         self.model_columns = [i for i in self.model_columns if i in list(self.df)]
@@ -49,7 +51,6 @@ class MatchedMarketScoring:
             ]
             for i in missing:
                 print(f"-------- Missing Feature Importance: {i} --------")
-            # assert len(missing) == 0, "Missing Features"
 
         self.feature_weights = [v for k, v in self.feature_importance.items()]
         self.ranking_df, self.fi = self.score_markets()
@@ -105,13 +106,15 @@ class MatchedMarketScoring:
             list(self.feature_importance.items()), columns=["Feature", WEIGHT]
         ).sort_values(by=[WEIGHT], ascending=False)
         score_df = df[self.model_columns].copy()
+        score_df = score_df[[c for c in list(score_df) if c not in self.scoring_removed_columns]]
         if "Cpm Cpm" in score_df.columns:
             score_df["Cpm Cpm"] = 1 / score_df["Cpm Cpm"]
 
         scaler = MinMaxScaler()
         x_norm = scaler.fit_transform(score_df)
-        scores = np.matmul(x_norm, self.feature_weights)
-        ranking_df = pd.DataFrame(x_norm, columns=self.model_columns)
+        scores = np.matmul(x_norm, [v for c,v in self.feature_importance.items() if c in list(score_df)])
+
+        ranking_df = pd.DataFrame(x_norm, columns=list(score_df))
         ranking_df[SCORE] = list(scores)
 
         display_columns = self.display_columns + [self.target_variable]

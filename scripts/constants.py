@@ -25,6 +25,15 @@ DEFAULT_DMA_COLS = [
 ]
 
 DEFAULT_STATE_COLS = [
+ 'GDP',
+ 'Median Household Income',
+ 'Per Capita Income',
+ 'Median Housing Value',
+ 'In Labor Force',
+ 'Broadband Any Source',
+ 'Total Bachelors Or Higher',
+ 'Total Spanish',
+ 'Owner Occupied',
 ]
 
 DEFAULT_WORLD_COLS = [
