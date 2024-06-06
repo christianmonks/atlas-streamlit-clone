@@ -70,6 +70,7 @@ class MatchedMarketScoring:
         df = self.df.dropna(subset=self.model_columns).reset_index(drop=True)
         x = df[self.model_columns]
         y = df[self.target_variable]
+
         param_grid = {
             "criterion": ["gini", "entropy", "log_loss"],
             "max_depth": [3, 4, 5, 6, 7, 8, 9, 10],
@@ -114,7 +115,8 @@ class MatchedMarketScoring:
 
         scaler = MinMaxScaler()
         x_norm = scaler.fit_transform(score_df)
-        scores = np.matmul(x_norm, [v for c,v in self.feature_importance.items() if c in list(score_df)])
+        total_feat = sum([v for c,v in self.feature_importance.items() if c in list(score_df)])
+        scores = np.matmul(x_norm, [v/total_feat for c,v in self.feature_importance.items() if c in list(score_df)])
 
         ranking_df = pd.DataFrame(x_norm, columns=list(score_df))
         ranking_df[SCORE] = list(scores)
