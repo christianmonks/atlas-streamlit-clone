@@ -11,10 +11,21 @@ from scripts.matched_market import (
     MatchedMarketScoring,
     calculate_tier
 )
+from st_pages import hide_pages, show_pages, Page
 
 # Set page configuration
 st.set_page_config(page_title="MarketXBot", layout="wide")
 import streamlit_vertical_slider as svs
+
+if check_password("Home"):
+    # Password is correct, show every page
+    show_pages(
+        [Page(path="Home.py", name="Home"),]
+    )
+else:
+    # user has not input a password yet, hide the sidebar pages
+    hide_pages(["Home"])
+    st.stop()
 
 # Add in logo to streamlit app
 image = add_image()
