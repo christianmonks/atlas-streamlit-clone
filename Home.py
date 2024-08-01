@@ -14,7 +14,7 @@ from scripts.matched_market import (
 from st_pages import hide_pages, show_pages, Page
 
 # Set page configuration
-st.set_page_config(page_title="MarketXBot", layout="wide")
+st.set_page_config(page_title="Atlas", layout="wide")
 import streamlit_vertical_slider as svs
 
 if check_password("Home"):
