@@ -110,8 +110,6 @@ class MatchedMarketScoring:
         ).sort_values(by=[WEIGHT], ascending=False)
         score_df = df[self.model_columns].copy()
         score_df = score_df[[c for c in list(score_df) if c not in self.scoring_removed_columns]]
-        if "Cpm Cpm" in score_df.columns:
-            score_df["Cpm Cpm"] = 1 / score_df["Cpm Cpm"]
 
         scaler = MinMaxScaler()
         x_norm = scaler.fit_transform(score_df)
