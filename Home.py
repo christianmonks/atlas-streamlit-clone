@@ -1,6 +1,5 @@
 import json
 import pandas as pd
-import streamlit as st
 import plotly.express as px
 import os
 from os.path import join
@@ -43,7 +42,7 @@ with col1:
     st.write("")
 with col2:
     st.markdown(
-        "<h3 style='text-align: center;'> 👋  Welcome to Matched Market Testing Suite </h3>",
+        "<h3 style='text-align: center;'> 👋  Welcome to Atlas: The Matched Market Testing Suite </h3>",
         unsafe_allow_html=True,
     )
 with col3:
@@ -73,10 +72,10 @@ with col2:
     st.write("")
     st.write(
         """
-    **The Matched Market Testing Suite (MMT) is designed to craft potent market testing strategies tailored for brands and advertisers. 
-    Utilizing cutting-edge AI and machine learning technologies, it discerns the interplay between business KPIs and various demographic, 
-    economic, and media variables. By identifying key factors and quantifying their impact on business KPIs,
-    MMT empowers informed decision-making.** 
+    **Atlas is a matched market testing tool designed to craft potent market testing strategies tailored for 
+    advertisers and brands. Utilizing cutting-edge AI and machine learning technologies, it discerns the interplay 
+    between business KPIs and various demographic, economic, and media variables. By identifying key factors and 
+    quantifying their impact on business KPIs, Atlas empowers informed decision-making.** 
     """
     )
     tab1, tab2, tab3, tab4 = st.tabs(
@@ -115,18 +114,18 @@ with tab1:
         st.markdown(
             "* **Broad Data Integration**: MMT seamlessly integrates 1st and 3rd-party data from brands and advertisers, enriching analyses with robust insights."
         )
-    with st.expander(
-        "**Illustrative Examples of the Matched Market Testing Suite**", expanded=False
-    ):
-        st.markdown(
-            "* **European Fashion Retailer**: Strategic Market Assessment for a European online fashion retailer (Primary Business KPI: Brand Equity)"
-        )
-        st.markdown(
-            "* **Global Investment Fund**: Market Prioritization for a Global Investment Fund (Primary Business KPI: Not specified)"
-        )
-        st.markdown(
-            "* **US Fashion Retailer**: Tailored Market Analysis for a Fashion Brand in U.S. Markets (Primary Business KPI: Sales Volume)"
-        )
+    # with st.expander(
+    #     "**Illustrative Examples of the Matched Market Testing Suite**", expanded=False
+    # ):
+    #     st.markdown(
+    #         "* **European Fashion Retailer**: Strategic Market Assessment for a European online fashion retailer (Primary Business KPI: Brand Equity)"
+    #     )
+    #     st.markdown(
+    #         "* **Global Investment Fund**: Market Prioritization for a Global Investment Fund (Primary Business KPI: Not specified)"
+    #     )
+    #     st.markdown(
+    #         "* **US Fashion Retailer**: Tailored Market Analysis for a Fashion Brand in U.S. Markets (Primary Business KPI: Sales Volume)"
+    #     )
 
 # tab2: Matched Market Command Center
 with tab2:
@@ -137,10 +136,6 @@ with tab2:
             # KPI data uploader.
             st.write("")
             uploaded_file_kpi = st.file_uploader("**Upload Client KPI Data**")
-            st.info(
-                """👆 To protect your data and privacy while demoing this prototype, please upload a .csv file first. 
-                Sample to try: [kpi_data_example.csv](https://drive.google.com/file/d/1n6gayg5VcWRCtJ5qVIfRwjc08WJmed3y/view?usp=sharing)."""
-            )
             if uploaded_file_kpi is not None:
 
                 # Check if KPI data was uploaded, and check if there is KPI column.
@@ -159,10 +154,6 @@ with tab2:
             # Audience data uploader.
             st.write("")
             uploaded_file_audience = st.file_uploader("**Upload Client Specific Data**")
-            st.info(
-                """👆 To protect your data and privacy while demoing this prototype, please upload a .csv file first. 
-                Sample to try: [audience_data_example.csv](https://drive.google.com/file/d/1e57TDVk4LyjeLBSCHZ5I6eCeS3QX46FR/view?usp=sharing)."""
-            )
             if uploaded_file_audience is not None:
                 # Check if Audience data was uploaded, and search for audience columns.
                 audience_df = pd.read_csv(uploaded_file_audience)
