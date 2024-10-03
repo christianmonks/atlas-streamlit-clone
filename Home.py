@@ -78,16 +78,17 @@ with col2:
     quantifying their impact on business KPIs, Atlas empowers informed decision-making.** 
     """
     )
-    tab1, tab2, tab3, tab4 = st.tabs(
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
         [
             "**Product Overview**",
+            "**Quick Start**",
             "**Matched Market Command Center**",
             "**Market Rankings & Insights**",
             "**Matched Markets**",
         ]
     )
 
-# tab1: instructions
+# tab1: Product Overview
 with tab1:
     with st.expander("**Features of the Matched Market Testing Suite**", expanded=True):
         st.markdown(
@@ -114,21 +115,14 @@ with tab1:
         st.markdown(
             "* **Broad Data Integration**: MMT seamlessly integrates 1st and 3rd-party data from brands and advertisers, enriching analyses with robust insights."
         )
-    # with st.expander(
-    #     "**Illustrative Examples of the Matched Market Testing Suite**", expanded=False
-    # ):
-    #     st.markdown(
-    #         "* **European Fashion Retailer**: Strategic Market Assessment for a European online fashion retailer (Primary Business KPI: Brand Equity)"
-    #     )
-    #     st.markdown(
-    #         "* **Global Investment Fund**: Market Prioritization for a Global Investment Fund (Primary Business KPI: Not specified)"
-    #     )
-    #     st.markdown(
-    #         "* **US Fashion Retailer**: Tailored Market Analysis for a Fashion Brand in U.S. Markets (Primary Business KPI: Sales Volume)"
-    #     )
 
-# tab2: Matched Market Command Center
+# tab2: Quick Start
 with tab2:
+    pass
+
+
+# tab3: Matched Market Command Center
+with tab3:
     kpi_df, audience_df, agg_kpi_df = None, None, None
     with st.expander(label="**Data Uploader**", expanded=True):
         col1, col2 = st.columns([1, 1])
@@ -336,8 +330,8 @@ with tab2:
         "team at MediaAnalytics@mediamonks.com"
     )
 
-# tab3: Market Rankings & Insights
-with tab3:
+# tab4: Market Rankings & Insights
+with tab4:
     if st.session_state.mm and kpi_df is not None and audience_df is not None:
         mm = st.session_state.mm
         feature_importance = mm.feature_importance.copy()
@@ -505,8 +499,8 @@ with tab3:
             icon="🚨",
         )
 
-# tab4: Matched Markets
-with tab4:
+# tab5: Matched Markets
+with tab5:
     if st.session_state.mm and kpi_df is not None and audience_df is not None:
         mm1 = st.session_state.mm1
         mm_df = mm1.similar_markets
