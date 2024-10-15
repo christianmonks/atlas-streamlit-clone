@@ -11,7 +11,7 @@ from st_pages import hide_pages, show_pages, Page
 
 # Check for password and configure page visibility
 if check_password("Home"):
-    show_pages([Page(path="App.py", name="Home")])  # Show home page if password is correct
+    show_pages([Page(path="app.py", name="Home")])  # Show home page if password is correct
 else:
     hide_pages(["Home"])  # Hide home page if password is incorrect
     st.stop()  # Stop execution if password check fails
