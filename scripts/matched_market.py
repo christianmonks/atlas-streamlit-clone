@@ -12,6 +12,7 @@ class MatchedMarketScoring:
     def __init__(
         self,
         df: pd.DataFrame,
+        client_columns: [],
         audience_columns: list,
         covariate_columns: list,
         display_columns=[DMA_CODE, DMA_NAME],
@@ -34,8 +35,9 @@ class MatchedMarketScoring:
         self.display_columns = display_columns
         self.covariate_columns = covariate_columns
         self.audience_columns = audience_columns
+        self.client_columns = client_columns
         self.market_column = market_column
-        self.model_columns = self.covariate_columns + self.audience_columns
+        self.model_columns = self.covariate_columns + self.audience_columns + self.client_columns
         self.model_columns = [i for i in self.model_columns if i in list(self.df)]
 
         self.scoring_removed_columns = scoring_removed_columns

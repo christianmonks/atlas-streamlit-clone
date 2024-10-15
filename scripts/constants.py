@@ -6,12 +6,20 @@ CPM = "CPM"
 SCORE = "Score"
 RANK = "Rank"
 DMA_CODE = "DMA Code"
+DMA_NAME = "DMA Name"
 COUNTRY_CODE = "Country Code"
 COUNTRY_NAME = "Country Name"
 STATE_CODE = "State Code"
 STATE_NAME = "State Name"
-DMA_NAME = "DMA Name"
 VARIABLE_CORRELATION_THRESHOLD = 0.5
+
+MARKETS = [DMA_CODE, COUNTRY_CODE, STATE_CODE]
+MARKET_LEVELS = [c.replace('Code','').replace(' ','') for c in [COUNTRY_CODE, STATE_CODE, DMA_CODE]]
+
+AUDIENCE_BUILDER_DATASETS = [
+    'age', 'education_short', 'employment_status', 'foreign_born', 'household_income',
+    'household_language', 'housing_value', 'internet', 'race', 'voter'
+]
 
 DEFAULT_DMA_COLS = [
   "GDP",
@@ -47,4 +55,4 @@ DEFAULT_WORLD_COLS = [
     "Labour Force Participation (Female/Male Pop. %)",
 ]
 
-
+DEFAULT_COLUMNS = {'DMA': DEFAULT_DMA_COLS, 'State': DEFAULT_STATE_COLS, 'Country': DEFAULT_WORLD_COLS}
