@@ -3,6 +3,7 @@ from components.product_overview import render_product_overview
 from components.command_center import render_command_center
 from components.market_ranking import render_market_ranking
 from components.matched_markets import render_matched_markets
+from components.product_quick_start import render_product_quick_start
 
 def render_tabs():
     """
@@ -15,16 +16,21 @@ def render_tabs():
     `mm` in the session state (ensuring that data has been uploaded).
     """
     # Define the tabs for the interface
-    tab1, tab2, tab3, tab4 = st.tabs([
+    tab0, tab1, tab2, tab3, tab4 = st.tabs([
         "**Product Overview**",
+        "**Quick Start**",
         "**Matched Market Command Center**",
         "**Market Rankings & Insights**",
         "**Matched Markets**"
     ])
 
-    # Tab 1: Render Product Overview
-    with tab1:
+    # Tab 0: Render Product Overview
+    with tab0:
         render_product_overview()
+
+    # Tab 1: Quick Start
+    with tab1:
+        render_product_quick_start()
 
     # Tab 2: Render Matched Market Command Center
     with tab2:
