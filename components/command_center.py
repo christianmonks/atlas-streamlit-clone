@@ -3,14 +3,7 @@ import streamlit as st
 import os
 from os.path import join
 from pandas.api.types import is_numeric_dtype
-from scripts.constants import (
-    PERCENT_RANK, 
-    TIER, 
-    MARKET_LEVELS, 
-    VARIABLE_CORRELATION_THRESHOLD, 
-    AUDIENCE_BUILDER_DATASETS, 
-    MARKETS
-)
+from scripts.constants import *
 from scripts.matched_market import calculate_tier, MatchedMarketScoring
 
 MARKET_COLUMN = 'Market'
@@ -165,6 +158,7 @@ def render_command_center():
                 kpi_columns.get(kpi_column): kpi_column,
             }
 
+
             # Rename columns in client dataframe if it exists
             if client_df is not None:
                 client_columns = {i: i.title().replace("_", " ") for i in client_df.columns if market_level.lower() not in i.lower()}
@@ -175,7 +169,7 @@ def render_command_center():
             # Rename columns in KPI dataframe
             kpi_df.rename(columns=lambda col: rename_dict.get(col, col), inplace=True)
 
-            print(f'esto es lo que queremos ver kpi_columns: {kpi_columns}')
+
             date_columns = [k for k in kpi_df.columns if k not in [MARKET_COLUMN] + list(kpi_columns.keys())]
 
             # Check if market level exists in KPI data
@@ -196,13 +190,12 @@ def render_command_center():
                     agg_kpi_df = kpi_df.copy()
                     agg_kpi_df[TIER] = agg_kpi_df[kpi_column]
 
-                print(f'esto es lo que queremos ver date_columns: {date_columns}')
 
                 if date_columns:
                     # Select a date column if available
                     date_column = st.selectbox(
                         label="**Select a Date Column**",
-                        options=['Daily', 'Weekly', 'Aggregated'],
+                        options=['Daily', 'Weekly'],
                         help="Select the date column representing the time period of the KPI."
                     )
                 else:
@@ -211,15 +204,109 @@ def render_command_center():
                 st.error("Confirm Market Level", icon="🚨")
 
 
-        
-    # Expander for Additional Data Sources
-    with st.expander(label="**Incorporating Additional Data Sources**", expanded=False):
-        if kpi_df is not None and market_level is not None:
-            pass #TODO
+    
+     # Expander for incorporating additional data sources
+    with st.expander(label="**Incorporating Additional Data Sources**"):
+        if (kpi_df is None) or (market_level is None) or (MARKET_COLUMN not in list(kpi_df)):
+            st.error("Please Return to the Previous Expander and Upload Audience and KPI Data", icon="🚨")
+        else:
+            # Load and process additional data
+            
+            additional_data = pd.read_csv(join(cd, 'data', 'census', f'{market_level.replace(" ", "_").lower()}_data.csv'))
+            additional_data = additional_data.rename(columns=lambda col: rename_dict.get(col, col))
+
+            if audience_df is not None:
+                additional_data = additional_data[[k for k in list(additional_data) if k not in audience_columns]]
+
+            # Start with the list of dataframes
+            # Filter out None or empty dataframes
+            # Perform merging if there are any valid dataframes
+            dfs_to_merge = [additional_data, client_df, audience_df]
+            dfs_to_merge = [df for df in dfs_to_merge if df is not None]
+            df = agg_kpi_df
+            for additional_df in dfs_to_merge:
+                df = df.merge(additional_df, on=MARKET_COLUMN, how='inner')
+            
+            # Drop columns with high null percentage
+            null_percentage = (df.isnull().sum() / len(df)) * 100
+            columns_to_drop = null_percentage[null_percentage > 10].index
+            df = df.drop(columns=columns_to_drop)
+
+            column_market_name= market_level.split()[-1].lower().capitalize()
+
+            cov_columns = [c for c in additional_data if c not in [MARKET_COLUMN, column_market_name, TIER, kpi_column, 'Percent Rank'] ]
+            cov_columns = {c: c.title().replace("_", " ") for c in cov_columns}
+
+            df = df.rename(columns=cov_columns)
+            cov_columns = [v for k, v in cov_columns.items()]
+            cov_columns = list(set(cov_columns))
+            # Identify high correlation covariates if KPI is numeric
+            if is_numeric_dtype(kpi_df[kpi_column]):
+                corr = df[cov_columns + [kpi_column]].corr()[kpi_column].reset_index()
+                corr_vars = [
+                    i for i in corr[corr[kpi_column] > VARIABLE_CORRELATION_THRESHOLD]['index'].tolist() \
+                    if i != kpi_column and i != 'Universe'
+                ]
+            else:
+                # Default columns for non-numeric KPI
+                default_columns = DEFAULT_COLUMNS.get(column_market_name)
+                corr_vars = default_columns
+            
+
+            # Multiselect for demographic factors
+            included_cov = st.multiselect(
+                label="**Select Demographic Factors to Include or Exclude**",
+                options=cov_columns,
+                default=corr_vars,
+                help="Select demographic factors to include/exclude from the analysis."
+            )
+
+            # Final list of columns for analysis
+            client_columns = client_columns  if client_columns is not None else []
+            df = df[included_cov + client_columns + audience_columns + [kpi_column, TIER]]
+
+            if st.checkbox("View Merged KPI, Audiences and Market Data"):
+                st.dataframe(df, hide_index=True)
+            st.success(
+                "Successfully Merged KPI, Audiences, and Market Data. Review the merged data below."
+            )
 
     # Run market ranking and matching if data is ready
+    if agg_kpi_df is not None:
+        bt_run_market_ranking = st.button(
+            label="**Confirm and Run Market Ranking 🏃‍➡**"
+        )
+        if bt_run_market_ranking:
+            with st.spinner(
+                text="Running ML Model to Calculate Market Scoring & Matching..."
+            ):
+                spend_cols = [c for c in list(df) if 'spend' in c.lower()]
+                mm = MatchedMarketScoring(
+                    df=df,
+                    client_columns=client_columns,
+                    audience_columns=audience_columns,
+                    display_columns=[MARKET_COLUMN, column_market_name],
+                    covariate_columns=cov_columns,
+                    market_column=MARKET_COLUMN,
+                    scoring_removed_columns=spend_cols
+                )
 
-    ## TODO : code for running the process
+            # Save model outputs to session state
+            saved_outputs = {
+                'mm': mm,
+                'df': df,
+                'kpi_df': kpi_df,
+                'audience_columns': audience_columns,
+                'client_columns': client_columns,
+                'kpi_column': kpi_column,
+                'market_level': column_market_name,
+                'cov_columns': cov_columns,
+                'market_code': MARKET_COLUMN,
+                'spend_cols': spend_cols,
+                'date_column': date_column,
+            }
+            st.session_state.update(saved_outputs)
+            st.success("🚀 Successfully Ran Market Scoring & Matching 🚀")
    
     # Footer markdown with contact info
     st.markdown("***")
