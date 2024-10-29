@@ -6,7 +6,6 @@ from pandas.api.types import is_numeric_dtype
 from scripts.constants import *
 from scripts.matched_market import calculate_tier, MatchedMarketScoring
 
-MARKET_COLUMN = 'Market'
 
 def render_command_center():
     """
@@ -263,14 +262,13 @@ def render_command_center():
 
             # Final list of columns for analysis
             client_columns = client_columns  if client_columns is not None else []
-            df = df[included_cov + client_columns + audience_columns + [kpi_column, TIER]]
+            df = df[client_columns +included_cov+[kpi_column, TIER] + audience_columns ]
 
             if st.checkbox("View Merged KPI, Audiences and Market Data"):
                 st.dataframe(df, hide_index=True)
             st.success(
                 "Successfully Merged KPI, Audiences, and Market Data. Review the merged data below."
             )
-
     # Run market ranking and matching if data is ready
     if agg_kpi_df is not None:
         bt_run_market_ranking = st.button(
@@ -281,10 +279,11 @@ def render_command_center():
                 text="Running ML Model to Calculate Market Scoring & Matching..."
             ):
                 spend_cols = [c for c in list(df) if 'spend' in c.lower()]
+                print(f'columas buscadas:{column_market_name}')
                 mm = MatchedMarketScoring(
                     df=df,
                     client_columns=client_columns,
-                    audience_columns=audience_columns,
+                    audience_columns=[],
                     display_columns=[MARKET_COLUMN, column_market_name],
                     covariate_columns=cov_columns,
                     market_column=MARKET_COLUMN,
@@ -302,12 +301,13 @@ def render_command_center():
                 'market_level': column_market_name,
                 'cov_columns': cov_columns,
                 'market_code': MARKET_COLUMN,
+                'market_name': column_market_name,
                 'spend_cols': spend_cols,
                 'date_column': date_column,
             }
             st.session_state.update(saved_outputs)
             st.success("🚀 Successfully Ran Market Scoring & Matching 🚀")
-   
+
     # Footer markdown with contact info
     st.markdown("***")
     st.markdown(

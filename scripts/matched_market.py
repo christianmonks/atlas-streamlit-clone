@@ -15,8 +15,8 @@ class MatchedMarketScoring:
         client_columns: [],
         audience_columns: list,
         covariate_columns: list,
-        display_columns=[DMA_CODE, DMA_NAME],
-        market_column=DMA_CODE,
+        display_columns=[MARKET_COLUMN, DMA_NAME],
+        market_column=MARKET_COLUMN,
         target_variable=TIER,
         scoring_removed_columns=[],
         run_model=True,
@@ -36,7 +36,7 @@ class MatchedMarketScoring:
         self.covariate_columns = covariate_columns
         self.audience_columns = audience_columns
         self.client_columns = client_columns
-        self.market_column = market_column
+        self.market_column = MARKET_COLUMN
         self.model_columns = self.covariate_columns + self.audience_columns + self.client_columns
         self.model_columns = [i for i in self.model_columns if i in list(self.df)]
 
