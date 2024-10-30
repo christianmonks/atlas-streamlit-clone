@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 from scripts.constants import *
 import streamlit_vertical_slider as svs
-from scripts.matched_market import MatchedMarketScoring
+from scripts.matched_market_modificado import MatchedMarketScoring
 
 def render_market_ranking():
     """
