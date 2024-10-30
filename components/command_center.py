@@ -6,7 +6,6 @@ from pandas.api.types import is_numeric_dtype
 from scripts.constants import *
 from scripts.matched_market import calculate_tier, MatchedMarketScoring
 
-
 def render_command_center():
     """
     Render the Command Center tab in the Streamlit app.
