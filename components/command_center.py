@@ -223,7 +223,7 @@ def render_command_center():
             additional_data = additional_data.rename(columns=lambda col: rename_dict.get(col, col))
 
             if audience_df is not None:
-                additional_columns_exclude = audience_columns + [market_name]
+                additional_columns_exclude = audience_columns
                 additional_data = additional_data[[k for k in list(additional_data) if k not in additional_columns_exclude]]
 
             # Start with the list of dataframes
@@ -275,7 +275,7 @@ def render_command_center():
 
             # Final list of columns for analysis
             client_columns = client_columns  if client_columns is not None else []
-            final_columns = client_columns + included_cov + [kpi_column, TIER] + audience_filter
+            final_columns = [column_market_name] + client_columns + included_cov + [kpi_column, TIER] + audience_filter 
             #final_columns = list(set(final_columns))
             df = df[final_columns]
 
@@ -285,7 +285,6 @@ def render_command_center():
                 "Successfully Merged KPI, Audiences, and Market Data. Review the merged data below."
             )
 
-            print(audience_columns)
     # Run market ranking and matching if data is ready
     if agg_kpi_df is not None:
         bt_run_market_ranking = st.button(
@@ -296,12 +295,13 @@ def render_command_center():
                 text="Running ML Model to Calculate Market Scoring & Matching..."
             ):
                 spend_cols = [c for c in list(df) if 'spend' in c.lower()]
-                print(f'columas buscadas:{column_market_name}')
+                client_columns = [col for col in client_columns if col != MARKET_COLUMN]
+
                 mm = MatchedMarketScoring(
                     df=df,
-                    client_columns=client_columns,
-                    audience_columns=audience_columns,
-                    display_columns=[MARKET_COLUMN],
+                    client_columns= client_columns,
+                    audience_columns= [default],
+                    display_columns=[MARKET_COLUMN, column_market_name],
                     covariate_columns=cov_columns,
                     market_column=MARKET_COLUMN,
                     scoring_removed_columns=spend_cols
@@ -312,7 +312,7 @@ def render_command_center():
                 'mm': mm,
                 'df': df,
                 'kpi_df': kpi_df,
-                'audience_columns': audience_columns,
+                'audience_columns':  [default],
                 'client_columns': client_columns,
                 'kpi_column': kpi_column,
                 'market_level': column_market_name,
