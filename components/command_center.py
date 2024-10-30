@@ -275,13 +275,17 @@ def render_command_center():
 
             # Final list of columns for analysis
             client_columns = client_columns  if client_columns is not None else []
-            df = df[[MARKET_COLUMN] + client_columns +included_cov+[kpi_column, TIER] + audience_filter]
+            final_columns = client_columns + included_cov + [kpi_column, TIER] + audience_filter
+            #final_columns = list(set(final_columns))
+            df = df[final_columns]
 
             if st.checkbox("View Merged KPI, Audiences and Market Data"):
                 st.dataframe(df, hide_index=True)
             st.success(
                 "Successfully Merged KPI, Audiences, and Market Data. Review the merged data below."
             )
+
+            print(audience_columns)
     # Run market ranking and matching if data is ready
     if agg_kpi_df is not None:
         bt_run_market_ranking = st.button(
