@@ -301,7 +301,7 @@ def render_command_center():
                     df=df,
                     client_columns=client_columns,
                     audience_columns=audience_columns,
-                    display_columns=[MARKET_COLUMN, column_market_name],
+                    display_columns=[MARKET_COLUMN],
                     covariate_columns=cov_columns,
                     market_column=MARKET_COLUMN,
                     scoring_removed_columns=spend_cols
