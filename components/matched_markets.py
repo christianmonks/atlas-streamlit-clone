@@ -5,7 +5,7 @@ from pandas.api.types import is_numeric_dtype
 import plotly.express as px
 from scripts.constants import *
 import streamlit_vertical_slider as svs
-from scripts.matched_market_modificado import MatchedMarketScoring
+from scripts.matched_market import MatchedMarketScoring
 
 
 def render_matched_markets():
