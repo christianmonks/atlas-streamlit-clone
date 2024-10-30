@@ -12,11 +12,11 @@ COUNTRY_NAME = "Country Name"
 STATE_CODE = "State Code"
 STATE_NAME = "State Name"
 VARIABLE_CORRELATION_THRESHOLD = 0.5
-MARKET_COLUMN = 'Market'
 
-MARKETS = [DMA_CODE, COUNTRY_CODE, STATE_CODE]
 #MARKET_LEVELS = [c.replace('Code','') for c in [COUNTRY_CODE, STATE_CODE, DMA_CODE]]
-MARKET_LEVELS = ["US DMA", "US State"] #, "MX City"]
+MARKETS = [DMA_CODE, COUNTRY_CODE, STATE_CODE]
+MARKET_LEVELS = ["US DMA", "US State"] #, "MX City"] # Format: country_marketType
+MARKET_COLUMN = 'Market'
 
 AUDIENCE_BUILDER_DATASETS = [
     'age', 'education_short', 'employment_status', 'foreign_born', 'household_income',

@@ -34,71 +34,81 @@ def render_command_center():
         if market_level == 'Select a Market Level':
             st.error("Please Return to the Previous Expander and select a Market Level", icon="🚨")
         else:
-            audience_file = f"{market_level.replace(' ', '_').lower()}_audience.csv" # gender*age for now
-            audience_path = join(cd, 'data', 'audience', audience_file)
-            audience_df = pd.read_csv(audience_path)
-            
-            market_name = market_level.split()[-1].lower()
-            excluded_columns = { 'market', f'{market_name} name', f'{market_name} code' }
-            audience_columns = [col for col in audience_df.columns if col.lower() not in excluded_columns]
 
-            if 'default' not in st.session_state:
-                st.session_state.default = ["universe"] if "universe" in audience_columns else []
-            
-            selected_audience = st.multiselect(
+            # Read audience csv by market and country
+            audience_file = f"{market_level.replace(' ', '_').lower()}_audience.csv"  # gender*age for now
+            audience_path = join(cd, 'data', 'audience', audience_file)
+            complete_audience_df = pd.read_csv(audience_path)
+
+            # Replace underscores in all column names and convert to title case
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('_', ' ').str.title()
+ 
+            # Get audience columns to select
+            market_name = market_level.split()[-1].capitalize()
+            excluded_columns = {MARKET_COLUMN.lower(), f'{market_name.lower()} name', f'{market_name.lower()} code', f'{market_name.lower()}' }
+            audience_columns = [col for col in complete_audience_df.columns if col.lower() not in excluded_columns]
+
+            # Convert audience options to title case
+            audience_columns = [option.title() for option in audience_columns]
+
+            default = "Universe"
+
+            audience_filter = st.multiselect(
                 label="**Select Audience Columns**",
                 options=audience_columns,
-                default=st.session_state.default,
+                default=default,
                 help="Select audience demographics. Default set as Universe.",
                 key="audience_selection"  # Add a key to manage state if needed
             )
 
-            if not selected_audience:
-                selected_audience = st.session_state.default
+            # if not audience_filter:
+            #     audience_filter = default  # st.session_state.default
 
             # Ensure universe is not selected with other options
-            if "universe" in selected_audience and len(selected_audience) > 1:
-                selected_audience.remove("universe")
-                st.session_state.default = selected_audience
+            # if default in audience_filter and len(audience_filter) > 1:
+            #     audience_filter.remove(default)
+            #     # st.session_state.default = selected_audience
 
-            # Group and combine selected columns
-            if selected_audience:
-                # Group by gender and age range
-                gender_age_groups = {}
+            audience_df = complete_audience_df[[MARKET_COLUMN] + audience_filter]
 
-                for col in selected_audience:
-                    if '_' in col:  # Check if the column name contains an underscore
-                        gender, age_range = col.split('_', 1) # gender : male, female, total (f and m)
-                        if gender not in gender_age_groups:
-                            gender_age_groups[gender] = []
-                        gender_age_groups[gender].append(age_range)
+            # # Group and combine selected columns
+            # if selected_audience:
+            #     # Group by gender and age range
+            #     gender_age_groups = {}
 
-                combined_columns = {}
+            #     for col in selected_audience:
+            #         if '_' in col:  # Check if the column name contains an underscore
+            #             gender, age_range = col.split('_', 1) # gender : male, female, total (f and m)
+            #             if gender not in gender_age_groups:
+            #                 gender_age_groups[gender] = []
+            #             gender_age_groups[gender].append(age_range)
+
+            #     combined_columns = {}
                 
-                for gender, age_ranges in gender_age_groups.items():
-                    # Custom sorting function to handle different formats
-                    def sort_key(age):
-                        if 'under' in age:
-                            return (0, age)  # Treat 'under' as the lowest range
-                        elif 'over' in age:
-                            return (float('inf'), age)  # Treat 'over' as the highest range
-                        else:
-                            return (int(age.split('_')[0]), age)  # Numeric sorting for standard ranges
+            #     for gender, age_ranges in gender_age_groups.items():
+            #         # Custom sorting function to handle different formats
+            #         def sort_key(age):
+            #             if 'under' in age:
+            #                 return (0, age)  # Treat 'under' as the lowest range
+            #             elif 'over' in age:
+            #                 return (float('inf'), age)  # Treat 'over' as the highest range
+            #             else:
+            #                 return (int(age.split('_')[0]), age)  # Numeric sorting for standard ranges
                     
-                    # Sort age ranges using the custom sort key
-                    age_ranges.sort(key=sort_key)
+            #         # Sort age ranges using the custom sort key
+            #         age_ranges.sort(key=sort_key)
                     
-                    min_age = age_ranges[0].split('_')[0]  # First range
-                    max_age = age_ranges[-1].split('_')[-1]  # Last range
-                    combined_age_range = f"{gender} {min_age}-{max_age}" 
-                    combined_columns[combined_age_range] = audience_df[selected_audience].sum(axis=1)
+            #         min_age = age_ranges[0].split('_')[0]  # First range
+            #         max_age = age_ranges[-1].split('_')[-1]  # Last range
+            #         combined_age_range = f"{gender} {min_age}-{max_age}" 
+            #         combined_columns[combined_age_range] = audience_df[selected_audience].sum(axis=1)
 
-                # Create a new DataFrame with the combined columns
-                combined_df = pd.DataFrame(combined_columns)
+            #     # Create a new DataFrame with the combined columns
+            #     combined_df = pd.DataFrame(combined_columns)
 
-                if "universe" not in selected_audience:
-                    if st.checkbox("Show Combined DataFrame"):
-                        st.dataframe(combined_df)
+            #     if "universe" not in selected_audience:
+            #         if st.checkbox("Show Combined DataFrame"):
+            #             st.dataframe(combined_df)
 
     # Expander for Data Upload
     with st.expander(label="**Data Uploader**", expanded=True):
@@ -209,12 +219,12 @@ def render_command_center():
             st.error("Please Return to the Previous Expander and Upload Audience and KPI Data", icon="🚨")
         else:
             # Load and process additional data
-            
             additional_data = pd.read_csv(join(cd, 'data', 'census', f'{market_level.replace(" ", "_").lower()}_data.csv'))
             additional_data = additional_data.rename(columns=lambda col: rename_dict.get(col, col))
 
             if audience_df is not None:
-                additional_data = additional_data[[k for k in list(additional_data) if k not in audience_columns]]
+                additional_columns_exclude = audience_columns + [market_name]
+                additional_data = additional_data[[k for k in list(additional_data) if k not in additional_columns_exclude]]
 
             # Start with the list of dataframes
             # Filter out None or empty dataframes
@@ -222,6 +232,10 @@ def render_command_center():
             dfs_to_merge = [additional_data, client_df, audience_df]
             dfs_to_merge = [df for df in dfs_to_merge if df is not None]
             df = agg_kpi_df
+            print(df.columns)
+            for additional_df in dfs_to_merge:
+                print(additional_df.columns)
+
             for additional_df in dfs_to_merge:
                 df = df.merge(additional_df, on=MARKET_COLUMN, how='inner')
             
@@ -261,7 +275,7 @@ def render_command_center():
 
             # Final list of columns for analysis
             client_columns = client_columns  if client_columns is not None else []
-            df = df[client_columns +included_cov+[kpi_column, TIER] + audience_columns ]
+            df = df[[MARKET_COLUMN] + client_columns +included_cov+[kpi_column, TIER] + audience_filter]
 
             if st.checkbox("View Merged KPI, Audiences and Market Data"):
                 st.dataframe(df, hide_index=True)
@@ -282,7 +296,7 @@ def render_command_center():
                 mm = MatchedMarketScoring(
                     df=df,
                     client_columns=client_columns,
-                    audience_columns=[],
+                    audience_columns=audience_columns,
                     display_columns=[MARKET_COLUMN, column_market_name],
                     covariate_columns=cov_columns,
                     market_column=MARKET_COLUMN,
