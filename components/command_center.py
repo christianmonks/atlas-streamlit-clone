@@ -177,7 +177,6 @@ def render_command_center():
             # Rename columns in KPI dataframe
             kpi_df.rename(columns=lambda col: rename_dict.get(col, col), inplace=True)
 
-
             date_columns = [k for k in kpi_df.columns if k not in [MARKET_COLUMN] + list(kpi_columns.keys())]
 
             # Check if market level exists in KPI data
@@ -320,7 +319,7 @@ def render_command_center():
                 'market_code': MARKET_COLUMN,
                 'market_name': column_market_name,
                 'spend_cols': spend_cols,
-                'date_column': date_column,
+                'date_column': 'Date'#date_column,
             }
             st.session_state.update(saved_outputs)
             st.success("🚀 Successfully Ran Market Scoring & Matching 🚀")

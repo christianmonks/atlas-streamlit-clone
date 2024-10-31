@@ -185,8 +185,14 @@ def render_matched_markets():
                 )
 
             with col3:
+                
+
                 # Merge KPI data for comparison
                 kpi_comp = kpi_df.merge(df[[market_code, TIER]], on=market_code)
+
+                print("Before grouping:")
+                print(kpi_comp.head())
+                
                 if is_numeric_dtype(kpi_df[kpi_column]):
                     # Aggregate KPI for test markets
                     test = (
