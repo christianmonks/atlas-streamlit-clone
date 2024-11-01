@@ -7,8 +7,11 @@ def render_product_quick_start():
             Follow these steps to successfully run the tool:
 
             1. Ensure that your data adheres to the required schemas. You must upload both Client KPI Data and Client Audience Data.
-            2. Use the 'Data Uploader' in the 'Matched Market Command Center' tab to upload your data files.
-            3. Configure the necessary KPI selections for your analysis.
+            2. So to the 'Matched Market Command Center' tab to upload your data files.       
+            3. First select the market level of your data.
+            4. Choose your target audience.
+            5. Use the 'Data Uploader' yo upload your files.             
+            3. Configure the necessary KPI selections and the Date granularity for your analysis.
             4. Select additional data sources to enrich your dataset with demographic information.
             5. Execute the analysis by clicking the 'Confirm and Run Market Ranking' button.
             6. Review the results displayed in the 'Market Ranking & Insights' tab.
@@ -24,16 +27,17 @@ def render_product_quick_start():
             - **Unique Identifier:** 
               - **DMA CODE**
                 - **Description:** A unique identifier for a designated market area, used to link audience data by geographic region.
-                - **Naming Convention:** DMA_CODE.
+                - **Naming Convention:** Market.
                 - **Type:** Numeric.
                 - **Format:** 3 digits (e.g., 500, 501, 503).
               - **STATE CODE**
                 - **Description:** A two-letter postal abbreviation for a U.S. state, used to associate audience data with specific states.
-                - **Naming Convention:** STATE_CODE.
+                - **Naming Convention:** Market.
                 - **Type:** Alphanumeric.
                 - **Format:** 2 characters (e.g., NY, FL, TX).
             - **DATE**
               - **Description:** The date for the KPI data. Ideally, the data should be provided daily, but weekly data is acceptable as a minimum. If it is weekly data, this should be the start or end date of the week. 
+              - **Naming Convention:** Date.
               - **Format:** _mm/dd/yyyy_ (this format is important and must be followed).
             - **KPIs**
               - **Description:** There should be one or more columns containing Key Performance Indicators (KPIs).
@@ -44,8 +48,8 @@ def render_product_quick_start():
 
         # Create a DataFrame for KPI data example
         kpi_data = pd.DataFrame({
-            "STATE_CODE": ["FL", "GA", "HI", "ID"],
-            "DATE": ["7/28/24", "7/28/24", "7/28/24", "7/28/24"],
+            "Market": ["FL", "GA", "HI", "ID"],
+            "Date": ["7/28/24", "7/28/24", "7/28/24", "7/28/24"],
             "KPI_Users": [208, 129, 10, 7],
             "KPI_Engaged_Sessions": [101, 75, 7, 4]
         })
@@ -53,8 +57,8 @@ def render_product_quick_start():
         
         # Create a DataFrame for weekly revenue example
         weekly_revenue_data = pd.DataFrame({
-            "DMA_CODE": [500, 501, 502, 503],
-            "WEEK": ["10/2/21", "10/2/21", "10/2/21", "10/2/21"],
+            "Market": [500, 501, 502, 503],
+            "Date": ["10/2/21", "10/2/21", "10/2/21", "10/2/21"],
             "KPI_TOTAL_REVENUE": [60862.7, 2320011.25, 10095.65, 27612.6]
         })
         st.dataframe(weekly_revenue_data, use_container_width=False)
@@ -65,27 +69,25 @@ def render_product_quick_start():
             - **Unique Identifier:**
               - **DMA CODE**
                 - **Description:** A unique identifier for a designated market area, used to link audience data by geographic region.
-                - **Naming Convention:** DMA_CODE.
+                - **Naming Convention:** Market.
                 - **Type:** Numeric
                 - **Format:** 3 digits (e.g., 500, 501, 503)
               - **STATE CODE**
                 - **Description:** A two-letter postal abbreviation for a U.S. state, used to associate audience data with specific states.
-                - **Naming Convention:** STATE_CODE.
+                - **Naming Convention:** Market.
                 - **Type:** Alphanumeric
                 - **Format:** 2 characters (e.g., NY, FL, TX)
 
             - **AUDIENCE**
               - **Description:** There should be one or more columns containing audiences.
               - **Naming Convention:** _AUDIENCE_XXX_ (e.g., Audience_P18+, Audience_M18-34). Each AUDIENCE column must include the word "AUDIENCE_" in its name.
-                    
-            ⚠️ **Important Note:** Ensure that the DMA_CODE or STATE identifiers are consistent with those in the KPI dataset, as they will be merged together. Any discrepancies may lead to data integrity issues.
-            
+                                
             **Examples Client Specific Data:**
             """)
         
         # Create a DataFrame for audience data example
         audience_data = pd.DataFrame({
-            "STATE_CODE": ["FL", "GA", "HI", "ID"],
+            "Market": ["FL", "GA", "HI", "ID"],
             "AUDIENCE_F18-34": [34555, 334565, 22345, 23443],
             "AUDIENCE_F35+": [66998, 3456602, 200045, 160320]
         })
@@ -94,7 +96,7 @@ def render_product_quick_start():
         
         # Create a DataFrame for audience metrics example
         audience_metrics_data = pd.DataFrame({
-            "DMA_CODE": [500, 501, 502, 503],
+            "Market": [500, 501, 502, 503],
             "AUDIENCE_F18-34": [98979, 2457307, 36390, 75838],
             "AUDIENCE_F35+": [323977, 6255895, 100076, 190420]
         })

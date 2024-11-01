@@ -161,6 +161,8 @@ def render_command_center():
                         f"Successfully Loaded KPI Data. Total of {len(kpi_df)} Records. A Snapshot Is Provided Below."
                     )
                     st.dataframe(kpi_df, hide_index=True)
+
+
                 else:
                     st.error("Please load a compatible dataset with a defined KPI column.")
             else:
@@ -212,7 +214,7 @@ def render_command_center():
             # Rename columns in KPI dataframe
             kpi_df.rename(columns=lambda col: rename_dict.get(col, col), inplace=True)
 
-            date_columns = [col for col in client_df.columns if 'Date' in col or 'date' in col]
+            date_column = next((col for col in kpi_df.columns if col == 'Date' or col == 'date'), None)
 
             # Check if market level exists in KPI data
             if MARKET_COLUMN in kpi_df.columns:
@@ -233,15 +235,15 @@ def render_command_center():
                     agg_kpi_df[TIER] = agg_kpi_df[kpi_column]
 
 
-                if date_columns:
+                if date_column:
                     # Select a date column if available
-                    date_column = st.selectbox(
-                        label="**Select a Date Column**",
+                    date_column_granularity = st.selectbox(
+                        label="**Select the granularity level of the date column**",
                         options=['Daily', 'Weekly'],
-                        help="Select the date column representing the time period of the KPI."
+                        help="Select the level of aggregation of the date column of the KPI."
                     )
                 else:
-                    date_column = None
+                    date_column_granularity = None
             else:
                 st.error("Confirm Market Level", icon="🚨")
 
@@ -310,7 +312,7 @@ def render_command_center():
             # Final list of columns for analysis
             client_columns = client_columns  if client_columns is not None else []
             client_columns = [col for col in client_columns if col != MARKET_COLUMN]
-            final_columns = [MARKET_COLUMN, column_market_name] + client_columns + included_cov + [audience_filter] + [kpi_column, TIER] 
+            final_columns = [MARKET_COLUMN, column_market_name] + client_columns + [audience_filter] + included_cov  + [kpi_column, TIER] 
             #final_columns = list(set(final_columns))
             df = df[final_columns]
 
@@ -376,7 +378,7 @@ def render_command_center():
                 'market_code': MARKET_COLUMN,
                 'market_name': column_market_name,
                 'spend_cols': spend_cols,
-                'date_column': date_columns
+                'date_column': date_column
             }
             st.session_state.update(saved_outputs)
             st.success("🚀 Successfully Ran Market Scoring & Matching 🚀")

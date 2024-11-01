@@ -16,7 +16,7 @@ def render_market_ranking():
     mm, audience_columns, kpi_column, market_level, client_columns, \
     cov_columns, market_code, market_name, spend_cols, df = (
         st.session_state[key] for key in [
-            "mm", "audience_columns", "kpi_column", "market_level", 'client_columns',
+            "mm", "audience_column", "kpi_column", "market_level", 'client_columns',
             "cov_columns", "market_code", "market_name", "spend_cols", "df"
         ]
     )
