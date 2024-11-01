@@ -42,31 +42,40 @@ def render_command_center():
             audience_path = join(cd, 'data', 'audience', audience_file)
             complete_audience_df = pd.read_csv(audience_path)
 
+            # Create common buckets based on the existing columns in the DataFrame
+
+            # Population aged 18 and over: sum specified columns
+            complete_audience_df['Population 18 and over'] = (
+                complete_audience_df[['total_18_to_34', 'total_35_to_49', 'total_50_to_64', 'total_65_and_over']].sum(axis=1)
+            )
+
+            # Male population aged 18 and over: sum specified columns
+            complete_audience_df['Male 18 and over'] = (
+                complete_audience_df[['male_18_to_34', 'male_35_to_49', 'male_50_to_64', 'male_65_and_over']].sum(axis=1)
+            )
+
+            # Female population aged 18 and over: sum specified columns
+            complete_audience_df['Female 18 and over'] = (
+                complete_audience_df[['female_18_to_34', 'female_35_to_49', 'female_50_to_64', 'female_65_and_over']].sum(axis=1)
+            )
+
+            # Population aged 18-49: sum specified columns
+            complete_audience_df['Population 18 to 49'] = (
+                complete_audience_df[['total_18_to_34', 'total_35_to_49']].sum(axis=1)
+            )
+
+            # Male population aged 18-49: sum specified columns
+            complete_audience_df['Male 18 to 49'] = (
+                complete_audience_df[['male_18_to_34', 'male_35_to_49']].sum(axis=1)
+            )
+
+            # Female population aged 18-49: sum specified columns
+            complete_audience_df['Female 18 to 49'] = (
+                complete_audience_df[['female_18_to_34', 'female_35_to_49']].sum(axis=1)
+            )
             # Replace underscores in all column names and convert to title case
             complete_audience_df.columns = complete_audience_df.columns.str.replace('_', ' ').str.title()
 
-            # Create common buckets based on the existing columns in the DataFrame
-            complete_audience_df['Population 18+'] = complete_audience_df.filter(like='total_18_to_34').sum(axis=1)  # Total 18 and over
-
-            # For Male 18+
-            male_18_plus_columns = complete_audience_df.filter(regex='^male_.*(18_to_34|35_to_49|50_to_64|65_and_over)$').columns
-            complete_audience_df['Male 18+'] = complete_audience_df[male_18_plus_columns].sum(axis=1)  # Male 18 and over
-
-            # For Female 18+
-            female_18_plus_columns = complete_audience_df.filter(regex='^female_.*(18_to_34|35_to_49|50_to_64|65_and_over)$').columns
-            complete_audience_df['Female 18+'] = complete_audience_df[female_18_plus_columns].sum(axis=1)  # Female 18 and over
-
-            complete_audience_df['Population 18-49'] = complete_audience_df.filter(like='total_18_to_34'and'total_35_to_49').sum(axis=1)  # Total 18-49
-
-            # For Male 18-49
-            male_18_49_columns = complete_audience_df.filter(regex='^male_.*(18_to_34|35_to_49)$').columns
-            complete_audience_df['Male 18-49'] = complete_audience_df[male_18_49_columns].sum(axis=1)  # Male 18-49
-
-            # For Female 18-49
-            female_18_49_columns = complete_audience_df.filter(regex='^female_.*(18_to_34|35_to_49)$').columns
-            complete_audience_df['Female 18-49'] = complete_audience_df[female_18_49_columns].sum(axis=1)  # Female 18-49
-            
-            
             # Add the names of the new common bucket columns to audience_columns
             audience_columns = list(complete_audience_df.columns)
             audience_columns = [col for col in audience_columns if col != MARKET_COLUMN]
