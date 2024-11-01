@@ -28,39 +28,64 @@ def render_command_center():
             help="Choose a Market Level for Market Scoring & Market Matching"
         )
 
+        column_market_name= market_level.split()[-1].lower().capitalize()
+
+    # Expander for Target data selection
     # Expander for Target data selection
     with st.expander(label="**Target Audience**", expanded=False):
 
         if market_level == 'Select a Market Level':
             st.error("Please Return to the Previous Expander and select a Market Level", icon="🚨")
         else:
-
             # Read audience csv by market and country
-            audience_file = f"{market_level.replace(' ', '_').lower()}_audience.csv"  # gender*age for now
+            audience_file = f"{market_level.replace(' ', '_').lower()}_audience.csv"
             audience_path = join(cd, 'data', 'audience', audience_file)
             complete_audience_df = pd.read_csv(audience_path)
 
             # Replace underscores in all column names and convert to title case
             complete_audience_df.columns = complete_audience_df.columns.str.replace('_', ' ').str.title()
- 
-            # Get audience columns to select
-            market_name = market_level.split()[-1].capitalize()
-            excluded_columns = {MARKET_COLUMN.lower(), f'{market_name.lower()} name', f'{market_name.lower()} code', f'{market_name.lower()}' }
-            audience_columns = [col for col in complete_audience_df.columns if col.lower() not in excluded_columns]
+
+            # Create common buckets based on the existing columns in the DataFrame
+            complete_audience_df['Population 18+'] = complete_audience_df.filter(like='total_18_to_34').sum(axis=1)  # Total 18 and over
+
+            # For Male 18+
+            male_18_plus_columns = complete_audience_df.filter(regex='^male_.*(18_to_34|35_to_49|50_to_64|65_and_over)$').columns
+            complete_audience_df['Male 18+'] = complete_audience_df[male_18_plus_columns].sum(axis=1)  # Male 18 and over
+
+            # For Female 18+
+            female_18_plus_columns = complete_audience_df.filter(regex='^female_.*(18_to_34|35_to_49|50_to_64|65_and_over)$').columns
+            complete_audience_df['Female 18+'] = complete_audience_df[female_18_plus_columns].sum(axis=1)  # Female 18 and over
+
+            complete_audience_df['Population 18-49'] = complete_audience_df.filter(like='total_18_to_34'and'total_35_to_49').sum(axis=1)  # Total 18-49
+
+            # For Male 18-49
+            male_18_49_columns = complete_audience_df.filter(regex='^male_.*(18_to_34|35_to_49)$').columns
+            complete_audience_df['Male 18-49'] = complete_audience_df[male_18_49_columns].sum(axis=1)  # Male 18-49
+
+            # For Female 18-49
+            female_18_49_columns = complete_audience_df.filter(regex='^female_.*(18_to_34|35_to_49)$').columns
+            complete_audience_df['Female 18-49'] = complete_audience_df[female_18_49_columns].sum(axis=1)  # Female 18-49
+            
+            
+            # Add the names of the new common bucket columns to audience_columns
+            audience_columns = list(complete_audience_df.columns)
+            audience_columns = [col for col in audience_columns if col != MARKET_COLUMN]
+            audience_columns = [col for col in audience_columns if col != column_market_name]
+            audience_columns.extend(audience_columns)  
 
             # Convert audience options to title case
             audience_columns = [option.title() for option in audience_columns]
 
             default = "Universe"
 
-            audience_filter = st.multiselect(
-                label="**Select Audience Columns**",
+            # Change from multiselect to selectbox for single selection
+            audience_filter = st.selectbox(
+                label="**Select Audience Column**",  # Changed to singular
                 options=audience_columns,
-                default=default,
-                help="Select audience demographics. Default set as Universe.",
+                index=audience_columns.index(default) if default in audience_columns else 0,
+                help="Select an audience demographic. Default set as Universe.",
                 key="audience_selection"  # Add a key to manage state if needed
             )
-
             # if not audience_filter:
             #     audience_filter = default  # st.session_state.default
 
@@ -69,7 +94,8 @@ def render_command_center():
             #     audience_filter.remove(default)
             #     # st.session_state.default = selected_audience
 
-            audience_df = complete_audience_df[[MARKET_COLUMN] + audience_filter]
+            # Generate a filtered DataFrame
+        audience_df = complete_audience_df[[MARKET_COLUMN] + [audience_filter]]
 
             # # Group and combine selected columns
             # if selected_audience:
@@ -243,7 +269,7 @@ def render_command_center():
             columns_to_drop = null_percentage[null_percentage > 10].index
             df = df.drop(columns=columns_to_drop)
 
-            column_market_name= market_level.split()[-1].lower().capitalize()
+            
 
             cov_columns = [c for c in additional_data if c not in [MARKET_COLUMN, column_market_name, TIER, kpi_column, 'Percent Rank'] ]
             cov_columns = {c: c.title().replace("_", " ") for c in cov_columns}
@@ -275,7 +301,7 @@ def render_command_center():
             # Final list of columns for analysis
             client_columns = client_columns  if client_columns is not None else []
             client_columns = [col for col in client_columns if col != MARKET_COLUMN]
-            final_columns = [MARKET_COLUMN, column_market_name] + client_columns + included_cov + audience_filter + [kpi_column, TIER] 
+            final_columns = [MARKET_COLUMN, column_market_name] + client_columns + included_cov + [audience_filter] + [kpi_column, TIER] 
             #final_columns = list(set(final_columns))
             df = df[final_columns]
 
@@ -292,7 +318,7 @@ def render_command_center():
     #      client_columns (audiences uploaded by the user), 
     #      audience_columns (audience selected by the user), and KPI_TIER (the target variable).
     #
-    # 2. audience_columns: The audience selected by the user.
+    # 2. audience_column: The audience selected by the user.
     #
     # 3. client_columns: A list of audiences uploaded by the user.
     #    'Market' should be included in df but not in client_columns.
@@ -321,7 +347,7 @@ def render_command_center():
                 mm = MatchedMarketScoring(
                     df=df,
                     client_columns= client_columns,
-                    audience_columns= [default],
+                    audience_columns= [audience_filter],
                     display_columns=[MARKET_COLUMN, column_market_name],
                     covariate_columns=cov_columns,
                     market_column=MARKET_COLUMN,
@@ -333,7 +359,7 @@ def render_command_center():
                 'mm': mm,
                 'df': df,
                 'kpi_df': kpi_df,
-                'audience_columns':  [default],
+                'audience_column': [audience_filter],
                 'client_columns': client_columns,
                 'kpi_column': kpi_column,
                 'market_level': column_market_name,
