@@ -104,7 +104,7 @@ def render_command_center():
             #     # st.session_state.default = selected_audience
 
             # Generate a filtered DataFrame
-        audience_df = complete_audience_df[[MARKET_COLUMN] + [audience_filter]]
+            audience_df = complete_audience_df[[MARKET_COLUMN] + [audience_filter]]
 
             # # Group and combine selected columns
             # if selected_audience:
