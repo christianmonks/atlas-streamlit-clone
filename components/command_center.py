@@ -177,7 +177,7 @@ def render_command_center():
             # Rename columns in KPI dataframe
             kpi_df.rename(columns=lambda col: rename_dict.get(col, col), inplace=True)
 
-            date_columns = [k for k in kpi_df.columns if k not in [MARKET_COLUMN] + list(kpi_columns.keys())]
+            date_columns = [col for col in client_df.columns if 'Date' in col or 'date' in col]
 
             # Check if market level exists in KPI data
             if MARKET_COLUMN in kpi_df.columns:
@@ -274,7 +274,8 @@ def render_command_center():
 
             # Final list of columns for analysis
             client_columns = client_columns  if client_columns is not None else []
-            final_columns = [column_market_name] + client_columns + included_cov + [kpi_column, TIER] + audience_filter 
+            client_columns = [col for col in client_columns if col != MARKET_COLUMN]
+            final_columns = [MARKET_COLUMN, column_market_name] + client_columns + included_cov + audience_filter + [kpi_column, TIER] 
             #final_columns = list(set(final_columns))
             df = df[final_columns]
 
@@ -285,6 +286,28 @@ def render_command_center():
             )
 
     # Run market ranking and matching if data is ready
+    # The model requires the following variables:
+    # 1. df: A DataFrame containing all necessary data
+    #    - Includes columns: Market, Dma/State, KPI_columns,
+    #      client_columns (audiences uploaded by the user), 
+    #      audience_columns (audience selected by the user), and KPI_TIER (the target variable).
+    #
+    # 2. audience_columns: The audience selected by the user.
+    #
+    # 3. client_columns: A list of audiences uploaded by the user.
+    #    'Market' should be included in df but not in client_columns.
+    #
+    # 4. cov_columns: Columns with additional information.
+    #
+    # 5. display_columns: Includes Market and market_name: Dma/State.
+    #   
+    #   The model:
+    # - Takes the complete df provided.
+    # - Combines the three lists: audience_columns + client_columns + cov_columns.
+    # - Filters df based on this comprehensive list as input for the model.
+    # - Filters df using the target variable KPI_TIER by default.
+    # - Runs the model.
+    # - Uses display_columns to assign the model results (Market and Dma/State).
     if agg_kpi_df is not None:
         bt_run_market_ranking = st.button(
             label="**Confirm and Run Market Ranking 🏃‍➡**"
@@ -294,7 +317,6 @@ def render_command_center():
                 text="Running ML Model to Calculate Market Scoring & Matching..."
             ):
                 spend_cols = [c for c in list(df) if 'spend' in c.lower()]
-                client_columns = [col for col in client_columns if col != MARKET_COLUMN]
 
                 mm = MatchedMarketScoring(
                     df=df,
@@ -319,7 +341,7 @@ def render_command_center():
                 'market_code': MARKET_COLUMN,
                 'market_name': column_market_name,
                 'spend_cols': spend_cols,
-                'date_column': 'Date'#date_column,
+                'date_column': date_columns
             }
             st.session_state.update(saved_outputs)
             st.success("🚀 Successfully Ran Market Scoring & Matching 🚀")
