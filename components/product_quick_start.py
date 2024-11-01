@@ -7,7 +7,7 @@ def render_product_quick_start():
             Follow these steps to successfully run the tool:
 
             1. Ensure that your data adheres to the required schemas. You must upload both Client KPI Data and Client Audience Data.
-            2. So to the 'Matched Market Command Center' tab to upload your data files.       
+            2. Go to the 'Matched Market Command Center' tab to start.
             3. First select the market level of your data.
             4. Choose your target audience.
             5. Use the 'Data Uploader' yo upload your files.             
