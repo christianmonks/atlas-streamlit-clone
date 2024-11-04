@@ -113,56 +113,11 @@ def render_command_center():
                 help="Select an audience demographic. Default set as Universe.",
                 key="audience_selection"  # Add a key to manage state if needed
             )
-            # if not audience_filter:
-            #     audience_filter = default  # st.session_state.default
-
-            # Ensure universe is not selected with other options
-            # if default in audience_filter and len(audience_filter) > 1:
-            #     audience_filter.remove(default)
-            #     # st.session_state.default = selected_audience
 
             # Generate a filtered DataFrame
             audience_df = complete_audience_df[[MARKET_COLUMN] + [audience_filter]]
 
-            # # Group and combine selected columns
-            # if selected_audience:
-            #     # Group by gender and age range
-            #     gender_age_groups = {}
-
-            #     for col in selected_audience:
-            #         if '_' in col:  # Check if the column name contains an underscore
-            #             gender, age_range = col.split('_', 1) # gender : male, female, total (f and m)
-            #             if gender not in gender_age_groups:
-            #                 gender_age_groups[gender] = []
-            #             gender_age_groups[gender].append(age_range)
-
-            #     combined_columns = {}
-                
-            #     for gender, age_ranges in gender_age_groups.items():
-            #         # Custom sorting function to handle different formats
-            #         def sort_key(age):
-            #             if 'under' in age:
-            #                 return (0, age)  # Treat 'under' as the lowest range
-            #             elif 'over' in age:
-            #                 return (float('inf'), age)  # Treat 'over' as the highest range
-            #             else:
-            #                 return (int(age.split('_')[0]), age)  # Numeric sorting for standard ranges
-                    
-            #         # Sort age ranges using the custom sort key
-            #         age_ranges.sort(key=sort_key)
-                    
-            #         min_age = age_ranges[0].split('_')[0]  # First range
-            #         max_age = age_ranges[-1].split('_')[-1]  # Last range
-            #         combined_age_range = f"{gender} {min_age}-{max_age}" 
-            #         combined_columns[combined_age_range] = audience_df[selected_audience].sum(axis=1)
-
-            #     # Create a new DataFrame with the combined columns
-            #     combined_df = pd.DataFrame(combined_columns)
-
-            #     if "universe" not in selected_audience:
-            #         if st.checkbox("Show Combined DataFrame"):
-            #             st.dataframe(combined_df)
-
+           
     # Expander for Data Upload
     with st.expander(label="**Data Uploader**", expanded=True):
         col1, col2 = st.columns([1, 1])
