@@ -16,7 +16,7 @@ def render_market_ranking():
     mm, audience_columns, kpi_column, market_level, client_columns, \
     cov_columns, market_code, market_name, spend_cols, df = (
         st.session_state[key] for key in [
-            "mm", "audience_columns", "kpi_column", "market_level", 'client_columns',
+            "mm", "audience_column", "kpi_column", "market_level", 'client_columns',
             "cov_columns", "market_code", "market_name", "spend_cols", "df"
         ]
     )
@@ -167,17 +167,17 @@ def render_market_ranking():
             ].sort_values(by=[TIER, "Score"], ascending=[False, True])
 
             # Determine graph column based on market level
-            graph_col = (DMA_NAME if market_level == "DMA" else
-                         STATE_NAME if market_level == "State" else
-                         COUNTRY_NAME)
+            # graph_col = (DMA_NAME if market_level == "DMA" else
+            #              STATE_NAME if market_level == "State" else
+            #              COUNTRY_NAME)
 
             # Create horizontal bar chart for top markets
             fig_ranking = px.bar(
                 display_df2,
                 x=SCORE,
-                y=graph_col,
+                y=market_name,
                 orientation="h",  # Horizontal bar chart
-                labels={graph_col: "Market Rank", SCORE: "Market Score"},
+                labels={market_name: "Market Rank", SCORE: "Market Score"},
                 title=f"Top {top_n} Markets Per Tier Based on {kpi_column} Score",
                 width=600,
                 height=500,
@@ -197,7 +197,7 @@ def render_market_ranking():
             )
             st.dataframe(
                 display_df2[
-                    [TIER, market_code, graph_col, "Score", "Tier Rank"]
+                    [TIER, market_name, market_code, "Score", "Tier Rank"]
                 ].sort_values(by=[TIER, "Score"], ascending=[True, False]),
                 hide_index=True,
                 use_container_width=True,
