@@ -45,53 +45,71 @@ def render_command_center():
             # Create common buckets based on the existing columns in the DataFrame
 
             # Population aged 18 and over: sum specified columns
-            complete_audience_df['Population 18 and over'] = (
+            complete_audience_df['P18+'] = (
                 complete_audience_df[['total_18_to_34', 'total_35_to_49', 'total_50_to_64', 'total_65_and_over']].sum(axis=1)
             )
 
             # Male population aged 18 and over: sum specified columns
-            complete_audience_df['Male 18 and over'] = (
+            complete_audience_df['M18+'] = (
                 complete_audience_df[['male_18_to_34', 'male_35_to_49', 'male_50_to_64', 'male_65_and_over']].sum(axis=1)
             )
 
             # Female population aged 18 and over: sum specified columns
-            complete_audience_df['Female 18 and over'] = (
+            complete_audience_df['F18+'] = (
                 complete_audience_df[['female_18_to_34', 'female_35_to_49', 'female_50_to_64', 'female_65_and_over']].sum(axis=1)
             )
 
             # Population aged 18-49: sum specified columns
-            complete_audience_df['Population 18 to 49'] = (
+            complete_audience_df['P18-49'] = (
                 complete_audience_df[['total_18_to_34', 'total_35_to_49']].sum(axis=1)
             )
 
             # Male population aged 18-49: sum specified columns
-            complete_audience_df['Male 18 to 49'] = (
+            complete_audience_df['M18-49'] = (
                 complete_audience_df[['male_18_to_34', 'male_35_to_49']].sum(axis=1)
             )
 
             # Female population aged 18-49: sum specified columns
-            complete_audience_df['Female 18 to 49'] = (
+            complete_audience_df['F18-49'] = (
                 complete_audience_df[['female_18_to_34', 'female_35_to_49']].sum(axis=1)
             )
             # Replace underscores in all column names and convert to title case
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('_', ' ').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('_', '-').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('Female', 'F').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('Male', 'M').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('-Total', '').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('Total', 'P').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('To-', '').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('-And-Over', '+').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('Universe', 'P').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('Under-5', '5-').str.title()
 
             # Add the names of the new common bucket columns to audience_columns
             audience_columns = list(complete_audience_df.columns)
-            audience_columns = [col for col in audience_columns if col != MARKET_COLUMN]
-            audience_columns = [col for col in audience_columns if col != column_market_name]
+            audience_columns = [col for col in audience_columns if col != MARKET_COLUMN and col != column_market_name]
             audience_columns.extend(audience_columns)  
 
             # Convert audience options to title case
             audience_columns = [option.title() for option in audience_columns]
+            audience_columns = list(set(audience_columns))
 
-            default = "Universe"
+            desired_order = [
+                'P', 'P-5-', 'P-5-9', 'P-10-17', 'P-18-34', 'P18+', 'P-35-49', 'P18-49', 'P-50-64', 'P-65+',
+                'M', 'M-5-', 'M-5-9', 'M-10-17', 'M-18-34', 'M18+', 'M-35-49', 'M18-49', 'M-50-64', 'M-65+',
+                'F', 'F-5-', 'F-5-9', 'F-10-17', 'F-18-34', 'F18+', 'F-35-49', 'F18-49', 'F-50-64', 'F-65+'
+            ]
+
+            order_dict = {value: index for index, value in enumerate(desired_order)}
+            audience_columns_sorted = sorted(audience_columns, key=lambda x: order_dict.get(x, float('inf')))
+
+
+            default = "P"
 
             # Change from multiselect to selectbox for single selection
             audience_filter = st.selectbox(
                 label="**Select Audience Column**",  # Changed to singular
-                options=audience_columns,
-                index=audience_columns.index(default) if default in audience_columns else 0,
+                options=audience_columns_sorted,
+                index=audience_columns_sorted.index(default) if default in audience_columns_sorted else 0,
                 help="Select an audience demographic. Default set as Universe.",
                 key="audience_selection"  # Add a key to manage state if needed
             )
