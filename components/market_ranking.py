@@ -115,7 +115,7 @@ def render_market_ranking():
     st.write("")  # Empty line for spacing
 
     # If the market level is DMA, display the heat map
-    if market_level == "DMA":
+    if market_level == "Dma":
         with st.expander("**DMA Market Score Heat Map**", expanded=True):
             with open("dma.json") as geofile:
                 source_geo = json.load(geofile)  # Load geographical data for the map
@@ -128,7 +128,7 @@ def render_market_ranking():
             fig_heat = px.choropleth(
                 perf_df,
                 geojson=source_geo,
-                locations=DMA_CODE,
+                locations='Market',
                 color="Score",
                 color_continuous_scale="YlOrRd",
                 range_color=(0, perf_df["Score"].max()),

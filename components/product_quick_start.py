@@ -24,15 +24,13 @@ def render_product_quick_start():
 
             #### **Client KPI Data**
             **Columns**
-            - **Unique Identifier:** 
+            - **Market**
               - **DMA CODE**
                 - **Description:** A unique identifier for a designated market area, used to link audience data by geographic region.
-                - **Naming Convention:** Market.
                 - **Type:** Numeric.
                 - **Format:** 3 digits (e.g., 500, 501, 503).
               - **STATE CODE**
                 - **Description:** A two-letter postal abbreviation for a U.S. state, used to associate audience data with specific states.
-                - **Naming Convention:** Market.
                 - **Type:** Alphanumeric.
                 - **Format:** 2 characters (e.g., NY, FL, TX).
             - **DATE**
@@ -66,19 +64,18 @@ def render_product_quick_start():
         st.markdown("""
             #### **Optional Client Specific Data**
             **Columns**
-            - **Unique Identifier:**
+            - **Market**
               - **DMA CODE**
                 - **Description:** A unique identifier for a designated market area, used to link audience data by geographic region.
-                - **Naming Convention:** Market.
                 - **Type:** Numeric
                 - **Format:** 3 digits (e.g., 500, 501, 503)
               - **STATE CODE**
                 - **Description:** A two-letter postal abbreviation for a U.S. state, used to associate audience data with specific states.
-                - **Naming Convention:** Market.
                 - **Type:** Alphanumeric
                 - **Format:** 2 characters (e.g., NY, FL, TX)
 
-            - **Media_Spend**
+            - **CLIENTs**
+              - **Naming Convention:** _CLIENT_XXX_ (e.g., CLIENT_Media_Spend, CLIENT_Total_Clicks). Each Client Data column must include the word "CLIENT_" in its name.
               - **Description:** There should be one or more columns containing client information such as media spend.
                                 
             **Examples Client Specific Data:**
@@ -87,7 +84,7 @@ def render_product_quick_start():
         # Create a DataFrame for audience data example
         audience_data = pd.DataFrame({
             "Market": ["FL", "GA", "HI", "ID"],
-            "Media_Spend": [34555, 334565, 22345, 23443],
+            "CLIENT_Media_Spend": [34555, 334565, 22345, 23443],
             #"AUDIENCE_F35+": [66998, 3456602, 200045, 160320]
         })
         st.dataframe(audience_data, use_container_width=False, hide_index=True)
@@ -96,7 +93,7 @@ def render_product_quick_start():
         # Create a DataFrame for audience metrics example
         audience_metrics_data = pd.DataFrame({
             "Market": [500, 501, 502, 503],
-            "Media_Spend": [98979, 2457307, 36390, 75838],
+            "CLIENT_Media_Spend": [98979, 2457307, 36390, 75838],
             #"AUDIENCE_F35+": [323977, 6255895, 100076, 190420]
         })
         st.dataframe(audience_metrics_data, use_container_width=False, hide_index=True)
