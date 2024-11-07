@@ -12,9 +12,9 @@ def render_command_center():
     """
 
     # Set the current directory
-    cd = os.getcwd()
-
     # Initialize empty dataframes
+
+    cd = os.getcwd()
     kpi_df, client_df, agg_kpi_df, audience_df = None, None, None, None
     client_columns, audience_columns = [], []
 
@@ -23,14 +23,12 @@ def render_command_center():
 
         market_level = st.selectbox(
             label="**Select a Market Level**",
-            options= ['Select a Market Level'] + MARKET_LEVELS,  # Elimina None de las opciones
-            #format_func=lambda x: 'Select a Market Level' if x is None else x,
+            options= ['Select a Market Level'] + MARKET_LEVELS,
             help="Choose a Market Level for Market Scoring & Market Matching"
         )
 
-        column_market_name= market_level.split()[-1].lower().capitalize()
+        column_market_name = market_level.split()[-1].lower().capitalize()
 
-    # Expander for Target data selection
     # Expander for Target data selection
     with st.expander(label="**Target Audience**", expanded=False):
 
@@ -43,51 +41,35 @@ def render_command_center():
             complete_audience_df = pd.read_csv(audience_path)
 
             # Create common buckets based on the existing columns in the DataFrame
+            def sum_columns(df, new_col_name, col_groups):
+                # Define a function to sum specified columns
+                df[new_col_name] = df[col_groups].sum(axis=1)
 
-            # Population aged 18 and over: sum specified columns
-            complete_audience_df['Population 18 and over'] = (
-                complete_audience_df[['total_18_to_34', 'total_35_to_49', 'total_50_to_64', 'total_65_and_over']].sum(axis=1)
-            )
+            # Define column groups for reuse
+            age_groups = ['18_to_34', '35_to_49', '50_to_64', '65_and_over']
+            genders = ['male', 'female']
 
-            # Male population aged 18 and over: sum specified columns
-            complete_audience_df['Male 18 and over'] = (
-                complete_audience_df[['male_18_to_34', 'male_35_to_49', 'male_50_to_64', 'male_65_and_over']].sum(axis=1)
-            )
+            # Sum population aged 18 and over (total, male, female)
+            sum_columns(complete_audience_df, 'Population 18 and over', [f'total_{age}' for age in age_groups])
+            sum_columns(complete_audience_df, 'Male 18 and over', [f'male_{age}' for age in age_groups])
+            sum_columns(complete_audience_df, 'Female 18 and over', [f'female_{age}' for age in age_groups])
 
-            # Female population aged 18 and over: sum specified columns
-            complete_audience_df['Female 18 and over'] = (
-                complete_audience_df[['female_18_to_34', 'female_35_to_49', 'female_50_to_64', 'female_65_and_over']].sum(axis=1)
-            )
+            # Sum population aged 18-49 (total, male, female)
+            sum_columns(complete_audience_df, 'Population 18 to 49', [f'total_{age}' for age in age_groups[:2]])
+            sum_columns(complete_audience_df, 'Male 18 to 49', [f'male_{age}' for age in age_groups[:2]])
+            sum_columns(complete_audience_df, 'Female 18 to 49', [f'female_{age}' for age in age_groups[:2]])
 
-            # Population aged 18-49: sum specified columns
-            complete_audience_df['Population 18 to 49'] = (
-                complete_audience_df[['total_18_to_34', 'total_35_to_49']].sum(axis=1)
-            )
-
-            # Male population aged 18-49: sum specified columns
-            complete_audience_df['Male 18 to 49'] = (
-                complete_audience_df[['male_18_to_34', 'male_35_to_49']].sum(axis=1)
-            )
-
-            # Female population aged 18-49: sum specified columns
-            complete_audience_df['Female 18 to 49'] = (
-                complete_audience_df[['female_18_to_34', 'female_35_to_49']].sum(axis=1)
-            )
             # Replace underscores in all column names and convert to title case
             complete_audience_df.columns = complete_audience_df.columns.str.replace('_', ' ').str.title()
 
-            # Add the names of the new common bucket columns to audience_columns
-            audience_columns = list(complete_audience_df.columns)
-            audience_columns = [col for col in audience_columns if col != MARKET_COLUMN]
-            audience_columns = [col for col in audience_columns if col != column_market_name]
-            audience_columns.extend(audience_columns)  
+            # Filter and update audience columns
+            audience_columns = [col for col in complete_audience_df.columns if col not in [MARKET_COLUMN, column_market_name]]
 
-            # Convert audience options to title case
-            audience_columns = [option.title() for option in audience_columns]
-
+            # Convert audience options to title case and extend the list
+            audience_columns = [col.title() for col in audience_columns]
             default = "Universe"
 
-            # Change from multiselect to selectbox for single selection
+            # Change from multiselect to select-box for single selection
             audience_filter = st.selectbox(
                 label="**Select Audience Column**",  # Changed to singular
                 options=audience_columns,
@@ -196,13 +178,10 @@ def render_command_center():
                 options=list(kpi_columns.keys()),
                 help="Choose a KPI column from the available options. Markets will be grouped into tiers based on the selected KPI."
             )
-            
-
             rename_dict = {
                 market_level: MARKET_COLUMN,
                 kpi_columns.get(kpi_column): kpi_column,
             }
-
 
             # Rename columns in client dataframe if it exists
             if client_df is not None:
@@ -234,7 +213,6 @@ def render_command_center():
                     agg_kpi_df = kpi_df.copy()
                     agg_kpi_df[TIER] = agg_kpi_df[kpi_column]
 
-
                 if date_column:
                     # Select a date column if available
                     date_column_granularity = st.selectbox(
@@ -249,7 +227,7 @@ def render_command_center():
 
 
     
-     # Expander for incorporating additional data sources
+    # Expander for incorporating additional data sources
     with st.expander(label="**Incorporating Additional Data Sources**"):
         if (kpi_df is None) or (market_level is None) or (MARKET_COLUMN not in list(kpi_df)):
             st.error("Please Return to the Previous Expander and Upload Audience and KPI Data", icon="🚨")
@@ -279,8 +257,6 @@ def render_command_center():
             null_percentage = (df.isnull().sum() / len(df)) * 100
             columns_to_drop = null_percentage[null_percentage > 10].index
             df = df.drop(columns=columns_to_drop)
-
-            
 
             cov_columns = [c for c in additional_data if c not in [MARKET_COLUMN, column_market_name, TIER, kpi_column, 'Percent Rank'] ]
             cov_columns = {c: c.title().replace("_", " ") for c in cov_columns}
@@ -313,7 +289,6 @@ def render_command_center():
             client_columns = client_columns  if client_columns is not None else []
             client_columns = [col for col in client_columns if col != MARKET_COLUMN]
             final_columns = [MARKET_COLUMN, column_market_name] + client_columns + [audience_filter] + included_cov  + [kpi_column, TIER] 
-            #final_columns = list(set(final_columns))
             df = df[final_columns]
 
             if st.checkbox("View Merged KPI, Audiences and Market Data"):
@@ -345,6 +320,7 @@ def render_command_center():
     # - Filters df using the target variable KPI_TIER by default.
     # - Runs the model.
     # - Uses display_columns to assign the model results (Market and Dma/State).
+
     if agg_kpi_df is not None:
         bt_run_market_ranking = st.button(
             label="**Confirm and Run Market Ranking 🏃‍➡**"
@@ -354,7 +330,6 @@ def render_command_center():
                 text="Running ML Model to Calculate Market Scoring & Matching..."
             ):
                 spend_cols = [c for c in list(df) if 'spend' in c.lower()]
-
                 mm = MatchedMarketScoring(
                     df=df,
                     client_columns= client_columns,
