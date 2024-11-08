@@ -25,15 +25,17 @@ def render_product_quick_start():
             #### **Client KPI Data**
             **Columns**
             - **Market**
-              - **DMA CODE**
+              - **_DMA CODE_**
                 - **Description:** A unique identifier for a designated market area, used to link audience data by geographic region.
+                - **Naming Convention:** Market.
                 - **Type:** Numeric.
                 - **Format:** 3 digits (e.g., 500, 501, 503).
-              - **STATE CODE**
+              - **_STATE CODE_**
                 - **Description:** A two-letter postal abbreviation for a U.S. state, used to associate audience data with specific states.
+                - **Naming Convention:** Market.                
                 - **Type:** Alphanumeric.
                 - **Format:** 2 characters (e.g., NY, FL, TX).
-            - **DATE**
+            - **Date**
               - **Description:** The date for the KPI data. Ideally, the data should be provided daily, but weekly data is acceptable as a minimum. If it is weekly data, this should be the start or end date of the week. 
               - **Naming Convention:** Date.
               - **Format:** _mm/dd/yyyy_ (this format is important and must be followed).
@@ -65,19 +67,21 @@ def render_product_quick_start():
             #### **Optional Client Specific Data**
             **Columns**
             - **Market**
-              - **DMA CODE**
+              - **_DMA CODE_**
                 - **Description:** A unique identifier for a designated market area, used to link audience data by geographic region.
+                - **Naming Convention:** Market.
                 - **Type:** Numeric
                 - **Format:** 3 digits (e.g., 500, 501, 503)
-              - **STATE CODE**
+              - **_STATE CODE_**
                 - **Description:** A two-letter postal abbreviation for a U.S. state, used to associate audience data with specific states.
+                - **Naming Convention:** Market.
                 - **Type:** Alphanumeric
                 - **Format:** 2 characters (e.g., NY, FL, TX)
 
             - **CLIENTs**
+              - **Description:** There should be one or more columns containing client information such as media spend.      
               - **Naming Convention:** _CLIENT_XXX_ (e.g., CLIENT_Media_Spend, CLIENT_Total_Clicks). Each Client Data column must include the word "CLIENT_" in its name.
-              - **Description:** There should be one or more columns containing client information such as media spend.
-                                
+                         
             **Examples Client Specific Data:**
             """)
         
