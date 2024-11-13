@@ -6,59 +6,107 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import MinMaxScaler
 from scripts.constants import *
-
+from statsmodels.stats.power import TTestIndPower
 
 class MatchedMarketScoring:
     def __init__(
         self,
         df: pd.DataFrame,
-        client_columns: [],
+        client_columns: list,
         audience_columns: list,
         covariate_columns: list,
-        display_columns=[DMA_CODE, DMA_NAME],
-        market_column=DMA_CODE,
-        target_variable=TIER,
-        scoring_removed_columns=[],
-        run_model=True,
-        feature_importance=None,
+        kpi_column: str,
+        display_columns: list = [DMA_CODE, DMA_NAME],
+        market_column: str = DMA_CODE,
+        target_variable: str = TIER,
+        scoring_removed_columns: list = [],
+        power_analysis_parameters: dict = {
+            'Alpha': 0.01,
+            'Power': 0.08,
+            'Lifts': [5, 10, 15],
+        },
+        power_analysis_inputs: dict = {
+            'Cost': None,
+            'Budget': None,
+        },
+        run_model: bool = True,
+        feature_importance: dict = None,
     ):
         """
         Initialize the MatchedMarketScoring class.
 
         :param df: DataFrame containing the data.
+        :param client_columns: List of columns representing client-specific features.
         :param audience_columns: List of columns representing audience features.
-        :param standard_columns: List of columns representing standard features.
-        :param target_variable: Name of the target variable column. Default is 'KPI_TIER'.
+        :param covariate_columns: List of columns representing covariates or control variables.
+        :param display_columns: List of columns to display in the output (default: [DMA_CODE, DMA_NAME]).
+        :param market_column: Column used to define the market (default: DMA_CODE).
+        :param target_variable: Name of the target variable column (default: TIER).
+        :param scoring_removed_columns: List of columns to exclude from scoring.
+        :param power_analysis_parameters: Dictionary containing parameters for power analysis (alpha, power, lifts).
+        :param power_analysis_inputs: Dictionary containing inputs for power analysis (budget, cost).
+        :param run_model: Boolean indicating whether to run the model or use pre-calculated feature importance.
+        :param feature_importance: Pre-calculated feature importance dictionary (default: None).
         """
+
+        # Create a deep copy of the input DataFrame
         self.df = df.copy(deep=True)
+
+        # Store input parameters
         self.target_variable = target_variable
         self.display_columns = display_columns
         self.covariate_columns = covariate_columns
         self.audience_columns = audience_columns
         self.client_columns = client_columns
         self.market_column = market_column
+
+        self.kpi_column = kpi_column
+
+        # Combine model-related columns and filter them by what exists in the DataFrame
         self.model_columns = self.covariate_columns + self.audience_columns + self.client_columns
         self.model_columns = [i for i in self.model_columns if i in list(self.df)]
 
+        # Handle columns to be removed from scoring
         self.scoring_removed_columns = scoring_removed_columns
         if self.scoring_removed_columns:
             for c in self.scoring_removed_columns:
                 print(f"-------- Column: {c} Removed from Market Scoring Purposes --------")
+
+        # If run_model is True, calculate feature importance, otherwise import existing one
         if run_model:
             print("-------- Calculating Feature Importance --------")
             self.feature_importance = self.run_model()
         else:
             print("-------- Importing Feature Importance --------")
             self.feature_importance = feature_importance
-            missing = [
-                key for key in self.model_columns if key not in self.feature_importance
-            ]
+            # Check for missing feature importance for any of the model columns
+            missing = [key for key in self.model_columns if key not in self.feature_importance]
             for i in missing:
                 print(f"-------- Missing Feature Importance: {i} --------")
 
+        # Extract feature importance values for ranking and scoring
         self.feature_weights = [v for k, v in self.feature_importance.items()]
+
+        # Score markets based on the calculated or provided feature importance
         self.ranking_df, self.fi = self.score_markets()
+
+        # Identify similar markets using the feature importance
         self.similar_markets = self.matching_markets()
+
+        # Store power analysis inputs (budget, cost) and check for completeness before running power analysis
+        self.power_analysis_inputs = power_analysis_inputs
+        if self.power_analysis_inputs.get('Budget') and self.power_analysis_inputs.get('Cost'):
+            print('-------- Running Power Analysis --------')
+            for k, v in self.power_analysis_inputs.items():
+                print(f'-------- {k}: ${v} --------')
+
+            self.power_analysis_parameters = power_analysis_parameters
+            self.power_analysis_parameters['Lifts'] = [x / 100 for x in self.power_analysis_parameters['Lifts']]
+            for k, v in self.power_analysis_parameters.items():
+                print(f"-------- Power Analysis Parameter {k}: {v}  --------")
+            self.power_analysis_results = self.power_analysis()
+        else:
+            print('-------- Please Input a Budget and a Cost to Run Power Analysis ---------')
 
     def run_model(self):
         """
@@ -189,6 +237,88 @@ class MatchedMarketScoring:
 
         similar_markets["Similarity Index"] = 1 - similar_markets["Similarity Index"]
         return similar_markets
+
+    def power_analysis(self):
+        """
+        Perform power analysis to calculate the required sample size, budget,
+        and running time for each market and lift percentage.
+        """
+
+        # Extract the relevant data (Market and KPI column) from the dataframe
+        kpi_data = self.df[['Market', self.kpi_column]]
+
+        # Extract the list of similar markets (Test Market and Control Market pairs)
+        markets = self.similar_markets[['Test Market Identifier', 'Control Market Identifier']]
+        l_markets = markets.values.tolist()
+
+        testing_markets, results = [], []
+        # Iterate over each market pair
+        for market in l_markets:
+            # Append the current market to the testing markets list
+            testing_markets.append(market)
+
+            # Flatten the list of testing markets
+            geo_input = [item for sublist in testing_markets for item in sublist]
+
+            # Filter the KPI data for the selected markets
+            geo_data = kpi_data[kpi_data['Market'].isin(geo_input)]
+
+            # Calculate the mean and standard deviation for the KPI
+            kpi_mean = geo_data[self.kpi_column].mean()
+            kpi_std = geo_data[self.kpi_column].std()
+
+            # Perform power analysis for each lift percentage
+            for lift in self.power_analysis_parameters.get('Lifts'):
+                # Calculate the minimum lift as a percentage of the mean KPI
+                min_lift_percentage = lift / 100
+
+                # Calculate the effect size for the t-test
+                effect_size = min_lift_percentage * kpi_mean / kpi_std
+
+                # Initialize power analysis using a t-test for independent samples
+                analysis = TTestIndPower()
+
+                # Solve for the required sample size given the effect size, power, and alpha
+                obs = analysis.solve_power(
+                    effect_size,
+                    power=self.power_analysis_parameters.get('Power'),
+                    alpha=self.power_analysis_parameters.get('Alpha'),
+                    ratio=(len(geo_input) - 1),
+                    alternative='larger'
+                )
+
+                # Calculate the required budget based on sample size, KPI mean, and lift
+                budget = obs * kpi_mean * min_lift_percentage * self.power_analysis_inputs.get('Cost')
+
+                # Estimate the running time in weeks (proportional to sample size)
+                running_time_weeks = round(obs / len(geo_input))
+
+                # Append the results for the current lift to the results list
+                results.append({
+                    'Lift': f"{lift}%",  # Lift as a percentage
+                    'Number of Markets': len(geo_input),  # Total number of markets included
+                    'Budget': budget,  # Estimated budget
+                    'Running Time (weeks)': running_time_weeks,  # Estimated running time
+                    'Geo List': ','.join(map(str, geo_input))  # List of geographies (markets)
+                })
+
+        # Convert the results list into a pandas DataFrame
+        df_results = pd.DataFrame(results)
+
+        min_budget_value = df_results.Budget.min()
+        min_budget_row = df_results[df_results.Budget == min_budget_value]
+
+        budget_row = df_results[
+            (df_results['Budget'] < self.power_analysis_inputs.get('Budget')) &
+            (df_results['Budget'] >=  self.power_analysis_inputs.get('Budget') * 0.9)
+        ]
+        result_dict = {
+            'All Results': df_results,
+            'Minimum Budget': min_budget_row,
+            'In Budget': budget_row
+        }
+
+        return result_dict
 
 # def generate_dma_data(
 #         dma_census_data: dict,
