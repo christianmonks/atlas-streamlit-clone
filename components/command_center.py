@@ -332,6 +332,7 @@ def render_command_center():
                     audience_columns= [audience_filter],
                     display_columns=[MARKET_COLUMN, column_market_name],
                     covariate_columns=cov_columns,
+                    kpi_column = kpi_column,
                     market_column=MARKET_COLUMN,
                     scoring_removed_columns=spend_cols
                 )
