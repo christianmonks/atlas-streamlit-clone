@@ -45,88 +45,84 @@ def render_command_center():
                 # Define a function to sum specified columns
                 df[new_col_name] = df[col_groups].sum(axis=1)
 
-            # Define column groups for reuse
-            age_groups = ['18_to_34', '35_to_49', '50_to_64', '65_and_over']
-            genders = ['male', 'female']
+            # Population aged 18 and over: sum specified columns
+            complete_audience_df['P18+'] = (
+                complete_audience_df[['total_18_to_34', 'total_35_to_49', 'total_50_to_64', 'total_65_and_over']].sum(axis=1)
+            )
 
-            # Sum population aged 18 and over (total, male, female)
-            sum_columns(complete_audience_df, 'Population 18 and over', [f'total_{age}' for age in age_groups])
-            sum_columns(complete_audience_df, 'Male 18 and over', [f'male_{age}' for age in age_groups])
-            sum_columns(complete_audience_df, 'Female 18 and over', [f'female_{age}' for age in age_groups])
+            # Male population aged 18 and over: sum specified columns
+            complete_audience_df['M18+'] = (
+                complete_audience_df[['male_18_to_34', 'male_35_to_49', 'male_50_to_64', 'male_65_and_over']].sum(axis=1)
+            )
 
-            # Sum population aged 18-49 (total, male, female)
-            sum_columns(complete_audience_df, 'Population 18 to 49', [f'total_{age}' for age in age_groups[:2]])
-            sum_columns(complete_audience_df, 'Male 18 to 49', [f'male_{age}' for age in age_groups[:2]])
-            sum_columns(complete_audience_df, 'Female 18 to 49', [f'female_{age}' for age in age_groups[:2]])
+            # Female population aged 18 and over: sum specified columns
+            complete_audience_df['F18+'] = (
+                complete_audience_df[['female_18_to_34', 'female_35_to_49', 'female_50_to_64', 'female_65_and_over']].sum(axis=1)
+            )
+
+            # Population aged 18-49: sum specified columns
+            complete_audience_df['P18-49'] = (
+                complete_audience_df[['total_18_to_34', 'total_35_to_49']].sum(axis=1)
+            )
+
+            # Male population aged 18-49: sum specified columns
+            complete_audience_df['M18-49'] = (
+                complete_audience_df[['male_18_to_34', 'male_35_to_49']].sum(axis=1)
+            )
+
+            # Female population aged 18-49: sum specified columns
+            complete_audience_df['F18-49'] = (
+                complete_audience_df[['female_18_to_34', 'female_35_to_49']].sum(axis=1)
+            )
 
             # Replace underscores in all column names and convert to title case
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('_', ' ').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('_', '-').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('Female-', 'F').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('Male-', 'M').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('-Total', 's').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('Total-', 'P').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('To-', '').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('-And-Over', '+').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('Universe', 'Population').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('under-5', '5-').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('Mtotal', 'Males').str.title()
+            complete_audience_df.columns = complete_audience_df.columns.str.replace('Ftotal', 'Females').str.title()
 
-            # Filter and update audience columns
-            audience_columns = [col for col in complete_audience_df.columns if col not in [MARKET_COLUMN, column_market_name]]
+            # Add the names of the new common bucket columns to audience_columns
+            audience_columns = list(complete_audience_df.columns)
+            audience_columns = [col for col in audience_columns if col != MARKET_COLUMN and col != column_market_name]
+            audience_columns.extend(audience_columns)  
 
-            # Convert audience options to title case and extend the list
-            audience_columns = [col.title() for col in audience_columns]
-            default = "Universe"
+            # Convert audience options to title case
+            audience_columns = [option.title() for option in audience_columns]
+            audience_columns = list(set(audience_columns))
+
+            desired_order = [
+                'Population', 'P5-', 'P5-9', 'P10-17', 'P18-34', 'P18+', 'P35-49', 'P18-49', 'P50-64', 'P65+',
+                'Females', 'F5-', 'F5-9', 'F10-17', 'F18-34', 'F18+', 'F35-49', 'F18-49', 'F50-64', 'F65+',
+                'Males', 'M5-', 'M5-9', 'M10-17', 'M18-34', 'M18+', 'M35-49', 'M18-49', 'M50-64', 'M65+'
+    
+            ]
+
+            order_dict = {value: index for index, value in enumerate(desired_order)}
+            audience_columns_sorted = sorted(audience_columns, key=lambda x: order_dict.get(x, float('inf')))
+
+
+            default = "Population"
 
             # Change from multiselect to select-box for single selection
             audience_filter = st.selectbox(
                 label="**Select Audience Column**",  # Changed to singular
-                options=audience_columns,
-                index=audience_columns.index(default) if default in audience_columns else 0,
+                options=audience_columns_sorted,
+                index=audience_columns_sorted.index(default) if default in audience_columns_sorted else 0,
                 help="Select an audience demographic. Default set as Universe.",
                 key="audience_selection"  # Add a key to manage state if needed
             )
-            # if not audience_filter:
-            #     audience_filter = default  # st.session_state.default
-
-            # Ensure universe is not selected with other options
-            # if default in audience_filter and len(audience_filter) > 1:
-            #     audience_filter.remove(default)
-            #     # st.session_state.default = selected_audience
 
             # Generate a filtered DataFrame
             audience_df = complete_audience_df[[MARKET_COLUMN] + [audience_filter]]
 
-            # # Group and combine selected columns
-            # if selected_audience:
-            #     # Group by gender and age range
-            #     gender_age_groups = {}
-
-            #     for col in selected_audience:
-            #         if '_' in col:  # Check if the column name contains an underscore
-            #             gender, age_range = col.split('_', 1) # gender : male, female, total (f and m)
-            #             if gender not in gender_age_groups:
-            #                 gender_age_groups[gender] = []
-            #             gender_age_groups[gender].append(age_range)
-
-            #     combined_columns = {}
-                
-            #     for gender, age_ranges in gender_age_groups.items():
-            #         # Custom sorting function to handle different formats
-            #         def sort_key(age):
-            #             if 'under' in age:
-            #                 return (0, age)  # Treat 'under' as the lowest range
-            #             elif 'over' in age:
-            #                 return (float('inf'), age)  # Treat 'over' as the highest range
-            #             else:
-            #                 return (int(age.split('_')[0]), age)  # Numeric sorting for standard ranges
-                    
-            #         # Sort age ranges using the custom sort key
-            #         age_ranges.sort(key=sort_key)
-                    
-            #         min_age = age_ranges[0].split('_')[0]  # First range
-            #         max_age = age_ranges[-1].split('_')[-1]  # Last range
-            #         combined_age_range = f"{gender} {min_age}-{max_age}" 
-            #         combined_columns[combined_age_range] = audience_df[selected_audience].sum(axis=1)
-
-            #     # Create a new DataFrame with the combined columns
-            #     combined_df = pd.DataFrame(combined_columns)
-
-            #     if "universe" not in selected_audience:
-            #         if st.checkbox("Show Combined DataFrame"):
-            #             st.dataframe(combined_df)
-
+           
     # Expander for Data Upload
     with st.expander(label="**Data Uploader**", expanded=True):
         col1, col2 = st.columns([1, 1])
