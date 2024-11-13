@@ -102,6 +102,7 @@ def render_market_ranking():
         display_columns=[market_code, market_name],
         covariate_columns=cov_columns,
         market_column=market_code,
+        kpi_column = kpi_column,
         run_model=False,
         feature_importance=feature_importance,
         scoring_removed_columns=spend_cols
