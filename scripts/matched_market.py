@@ -206,7 +206,7 @@ class MatchedMarketScoring:
                         * len(market_dist),
                         "Test Market Name": [
                             market_tier[
-                                f"{self.market_column.replace('Code', 'Name')}"
+                                f"{self.display_columns[1]}"
                             ].iloc[i]
                         ]
                         * len(market_dist),
@@ -216,7 +216,7 @@ class MatchedMarketScoring:
                         "Control Market Name": [
                             i
                             for i in market_tier[
-                                f"{self.market_column.replace('Code', 'Name')}"
+                                f"{self.display_columns[1]}"
                             ]
                         ],
                         "Similarity Index": list(
