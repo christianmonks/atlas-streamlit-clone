@@ -4,6 +4,7 @@ from components.command_center import render_command_center
 from components.market_ranking import render_market_ranking
 from components.matched_markets import render_matched_markets
 from components.product_quick_start import render_product_quick_start
+from components.power_analysis import render_power_analysis
 
 def render_tabs():
     """
@@ -16,12 +17,13 @@ def render_tabs():
     `mm` in the session state (ensuring that data has been uploaded).
     """
     # Define the tabs for the interface
-    tab0, tab1, tab2, tab3, tab4 = st.tabs([
+    tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "**Product Overview**",
         "**Quick Start**",
         "**Matched Market Command Center**",
         "**Market Rankings & Insights**",
-        "**Matched Markets**"
+        "**Matched Markets**",
+        "**Power Analysis**"
     ])
 
     # Tab 0: Render Product Overview
@@ -47,5 +49,10 @@ def render_tabs():
     with tab4:
         if 'mm' in st.session_state:
             render_matched_markets()
+        else:
+            st.error("Please Return to the Previous Tab and Upload Audience and KPI Data", icon="🚨")
+    with  tab5:
+        if 'mm' in st.session_state:
+            render_power_analysis()
         else:
             st.error("Please Return to the Previous Tab and Upload Audience and KPI Data", icon="🚨")

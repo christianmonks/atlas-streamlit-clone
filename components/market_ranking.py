@@ -108,7 +108,10 @@ def render_market_ranking():
         scoring_removed_columns=spend_cols
     )
 
-    st.session_state.mm1 = mm1  # Store the instance in session state
+    # Saving to session state.
+    st.session_state.mm1 = mm1
+    st.session_state.feature_importance = feature_importance
+
     display_df1 = mm1.fi[[FEATURE, WEIGHT]]  # Dataframe for feature importance
     display_df1[WEIGHT] = display_df1[WEIGHT] / display_df1[WEIGHT].sum()  # Normalize weights
     display_df2 = mm1.ranking_df.reset_index(drop=True)  # Dataframe for market rankings
@@ -116,7 +119,7 @@ def render_market_ranking():
     st.write("")  # Empty line for spacing
 
     # If the market level is DMA, display the heat map
-    if market_level == "Dma":
+    if market_level == "US DMA":
         with st.expander("**DMA Market Score Heat Map**", expanded=True):
             with open("dma.json") as geofile:
                 source_geo = json.load(geofile)  # Load geographical data for the map
