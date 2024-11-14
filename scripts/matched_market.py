@@ -21,9 +21,9 @@ class MatchedMarketScoring:
         target_variable: str = TIER,
         scoring_removed_columns: list = [],
         power_analysis_parameters: dict = {
-            'Alpha': 0.01,
-            'Power': 0.08,
-            'Lifts': [5, 10, 15],
+            'Alpha': 0.1,
+            'Power': 0.8,
+            'Lifts': [15],
         },
         power_analysis_inputs: dict = {
             'Cost': None,
@@ -283,19 +283,19 @@ class MatchedMarketScoring:
                     effect_size,
                     power=self.power_analysis_parameters.get('Power'),
                     alpha=self.power_analysis_parameters.get('Alpha'),
-                    ratio=(len(geo_input) - 1),
-                    alternative='larger'
+                    ratio=1, #ratio of test to control markets
+                    alternative='two-sided',
                 )
 
                 # Calculate the required budget based on sample size, KPI mean, and lift
                 budget = obs * kpi_mean * min_lift_percentage * self.power_analysis_inputs.get('Cost')
 
                 # Estimate the running time in weeks (proportional to sample size)
-                running_time_weeks = round(obs / len(geo_input))
+                running_time_weeks = round(2 * obs / len(geo_input))
 
                 # Append the results for the current lift to the results list
                 results.append({
-                    'Lift': f"{lift}%",  # Lift as a percentage
+                    'Lift': f"{lift}",  # Lift as a percentage
                     'Number of Markets': len(geo_input),  # Total number of markets included
                     'Budget': budget,  # Estimated budget
                     'Running Time (weeks)': running_time_weeks,  # Estimated running time
@@ -309,15 +309,14 @@ class MatchedMarketScoring:
         min_budget_row = df_results[df_results.Budget == min_budget_value]
 
         budget_row = df_results[
-            (df_results['Budget'] < self.power_analysis_inputs.get('Budget')) &
-            (df_results['Budget'] >=  self.power_analysis_inputs.get('Budget') * 0.9)
-        ]
+            (df_results['Budget'] < self.power_analysis_inputs.get('Budget'))
+        ].sort_values(by=['Running Time (weeks)'])
+
         result_dict = {
             'All Results': df_results,
             'Minimum Budget': min_budget_row,
             'In Budget': budget_row
         }
-
         return result_dict
 
 # def generate_dma_data(

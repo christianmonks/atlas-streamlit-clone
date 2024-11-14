@@ -11,38 +11,44 @@ def render_power_analysis():
         ]
     )
 
-    col1, col2, col3, col4 = st.columns([0.3, 0.3, 0.3, 0.3], gap="small")
+    col1, col2, col3, col4, col5 = st.columns([0.3, 0.3, 0.3, 0.3, 0.3], gap="small")
     with col1:
-        cost = st.number_input(
-            "**Enter a Cost**",
-            min_value=1,
-            max_value=10,
-            value=5,
-            help="Enter the cost associated with running the analysis or the estimated cost per unit.",
+        budget = st.number_input(
+            "**Budget**",
+            min_value=0,
+            max_value=1000000,
+            value=0,
+            help="Total budget allocated for the test.",
         )
     with col2:
-        budget = st.number_input(
-            "**Enter a Budget**",
-            min_value=1,
-            max_value=10,
-            value=5,
-            help="Enter the total budget allocated for the analysis or project.",
-        )
+            cost = st.number_input(
+                "**CPIK**",
+                min_value=0.0,
+                max_value=1000.0,
+                value=1.0,
+                help="Cost per incremental unit of KPI.",
+            )
     with col3:
         alpha = st.number_input(
-            "**Enter an Alpha**",
+            "**Significance Level**",
             min_value=0.0,
             max_value=1.0,
-            value=0.01,
-            help="Enter the significance level (alpha). Typical values are 0.01 or 0.05. This determines the threshold for statistical significance.",
+            value=0.1,
+            help="Significance level (alpha). This determines the threshold for statistical significance.",
         )
     with col4:
         power = st.number_input(
-            "**Enter a Power**",
+            "**Power Level**",
             min_value=0.0,
             max_value=1.0,
-            value=0.08,
-            help="Enter the statistical power level. This is the probability of correctly rejecting a false null hypothesis (typically 0.8 or 0.9).",
+            value=0.8,
+            help="Statistical power level. This is the probability of correctly rejecting a false null hypothesis.",
+        )
+    with col5:
+        lift = st.selectbox(
+            "**Minimum Detectable lift**",
+            options=['15%', '10%', '5%'],
+            help="Minimum lift that can be detected by the test.",
         )
 
     st.write("")
@@ -65,7 +71,7 @@ def render_power_analysis():
                 power_analysis_parameters={
                     'Alpha': alpha,
                     'Power': power,
-                    'Lifts': [5, 10, 15]
+                    'Lifts': [int(lift.replace('%', ''))]
                 },
                 power_analysis_inputs={
                     'Cost': cost,
@@ -74,17 +80,19 @@ def render_power_analysis():
                 run_model=False
             )
 
-            with st.expander(f"**Minimum Budget Testing Framework**", expanded=True):
-                st.dataframe(
-                    mm2.power_analysis_results.get('Minimum Budget'),
-                    use_container_width=False, hide_index=True
-                )
+            st.dataframe(mm2.power_analysis_results.get('All Results'))
 
-            if len(mm2.power_analysis_results.get('In Budget')) > 0:
-                with st.expander(f"**In Budget Testing Framework**", expanded=True):
-                    st.dataframe(
-                        mm2.power_analysis_results.get('In Budget'),
-                        use_container_width=False, hide_index=True
-                    )
-            else:
-                st.error("No In Budget Testing Frameworks", icon="🚨")
+            # with st.expander(f"**Minimum Budget Testing Framework**", expanded=True):
+            #     st.dataframe(
+            #         mm2.power_analysis_results.get('Minimum Budget'),
+            #         use_container_width=False, hide_index=True
+            #     )
+            #
+            # if len(mm2.power_analysis_results.get('In Budget')) > 0:
+            #     with st.expander(f"**In Budget Testing Framework**", expanded=True):
+            #         st.dataframe(
+            #             mm2.power_analysis_results.get('In Budget'),
+            #             use_container_width=False, hide_index=True
+            #         )
+            # else:
+            #     st.error("No In Budget Testing Frameworks", icon="🚨")

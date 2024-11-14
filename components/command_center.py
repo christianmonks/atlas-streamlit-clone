@@ -106,16 +106,14 @@ def render_command_center():
 
             order_dict = {value: index for index, value in enumerate(desired_order)}
             audience_columns_sorted = sorted(audience_columns, key=lambda x: order_dict.get(x, float('inf')))
-
-
             default = "Population"
 
             # Change from multiselect to select-box for single selection
             audience_filter = st.selectbox(
-                label="**Select Audience Column**",  # Changed to singular
+                label="**Select the Primary Audience for the Campaign**",  # Changed to singular
                 options=audience_columns_sorted,
                 index=audience_columns_sorted.index(default) if default in audience_columns_sorted else 0,
-                help="Select an audience demographic. Default set as Universe.",
+                help="Select an audience demographic. Default set as population of the market.",
                 key="audience_selection"  # Add a key to manage state if needed
             )
 
