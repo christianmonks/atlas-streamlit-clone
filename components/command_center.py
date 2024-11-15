@@ -106,16 +106,14 @@ def render_command_center():
 
             order_dict = {value: index for index, value in enumerate(desired_order)}
             audience_columns_sorted = sorted(audience_columns, key=lambda x: order_dict.get(x, float('inf')))
-
-
             default = "Population"
 
             # Change from multiselect to select-box for single selection
             audience_filter = st.selectbox(
-                label="**Select Audience Column**",  # Changed to singular
+                label="**Select the Primary Audience for the Campaign**",  # Changed to singular
                 options=audience_columns_sorted,
                 index=audience_columns_sorted.index(default) if default in audience_columns_sorted else 0,
-                help="Select an audience demographic. Default set as Universe.",
+                help="Select an audience demographic. Default set as population of the market.",
                 key="audience_selection"  # Add a key to manage state if needed
             )
 
@@ -328,12 +326,14 @@ def render_command_center():
                 spend_cols = [c for c in list(df) if 'spend' in c.lower()]
                 mm = MatchedMarketScoring(
                     df=df,
-                    client_columns= client_columns,
-                    audience_columns= [audience_filter],
+                    kpi_df=kpi_df,
+                    client_columns=client_columns,
+                    audience_columns=[audience_filter],
                     display_columns=[MARKET_COLUMN, column_market_name],
                     covariate_columns=cov_columns,
                     kpi_column = kpi_column,
                     market_column=MARKET_COLUMN,
+                    date_granularity=date_column_granularity,
                     scoring_removed_columns=spend_cols
                 )
 
@@ -347,6 +347,7 @@ def render_command_center():
                 'kpi_column': kpi_column,
                 'market_level': column_market_name,
                 'cov_columns': cov_columns,
+                'date_granularity': date_column_granularity,
                 'market_code': MARKET_COLUMN,
                 'market_name': column_market_name,
                 'spend_cols': spend_cols,

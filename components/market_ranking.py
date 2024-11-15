@@ -1,6 +1,5 @@
 import json
 import streamlit as st
-import pandas as pd
 import plotly.express as px
 from scripts.constants import *
 import streamlit_vertical_slider as svs
@@ -14,10 +13,10 @@ def render_market_ranking():
 
     # Extract required session state values
     mm, audience_columns, kpi_column, market_level, client_columns, \
-    cov_columns, market_code, market_name, spend_cols, df = (
+    cov_columns, market_code, market_name, spend_cols, df, kpi_df, date_granularity = (
         st.session_state[key] for key in [
             "mm", "audience_column", "kpi_column", "market_level", 'client_columns',
-            "cov_columns", "market_code", "market_name", "spend_cols", "df"
+            "cov_columns", "market_code", "market_name", "spend_cols", "df", "kpi_df", "date_granularity"
         ]
     )
 
@@ -97,18 +96,23 @@ def render_market_ranking():
     # Create a new instance of MatchedMarketScoring with updated parameters
     mm1 = MatchedMarketScoring(
         df=df,
+        kpi_df=kpi_df,
         audience_columns=audience_columns,
         client_columns=client_columns,
         display_columns=[market_code, market_name],
         covariate_columns=cov_columns,
         market_column=market_code,
-        kpi_column = kpi_column,
+        date_granularity=date_granularity,
+        kpi_column=kpi_column,
         run_model=False,
         feature_importance=feature_importance,
         scoring_removed_columns=spend_cols
     )
 
-    st.session_state.mm1 = mm1  # Store the instance in session state
+    # Saving to session state.
+    st.session_state.mm1 = mm1
+    st.session_state.feature_importance = feature_importance
+
     display_df1 = mm1.fi[[FEATURE, WEIGHT]]  # Dataframe for feature importance
     display_df1[WEIGHT] = display_df1[WEIGHT] / display_df1[WEIGHT].sum()  # Normalize weights
     display_df2 = mm1.ranking_df.reset_index(drop=True)  # Dataframe for market rankings
@@ -116,7 +120,7 @@ def render_market_ranking():
     st.write("")  # Empty line for spacing
 
     # If the market level is DMA, display the heat map
-    if market_level == "Dma":
+    if market_level == "US DMA":
         with st.expander("**DMA Market Score Heat Map**", expanded=True):
             with open("dma.json") as geofile:
                 source_geo = json.load(geofile)  # Load geographical data for the map
