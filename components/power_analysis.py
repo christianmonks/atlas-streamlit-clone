@@ -3,11 +3,11 @@ from scripts.matched_market import MatchedMarketScoring
 
 def render_power_analysis():
 
-    df, audience_columns, client_columns, market_code, market_name, \
-    cov_columns, kpi_column, feature_importance, spend_cols = (
+    df, kpi_df, audience_columns, client_columns, market_code, market_name, \
+    date_granularity, cov_columns, kpi_column, feature_importance, spend_cols = (
         st.session_state[key] for key in [
-            "df", "audience_column", "client_columns", "market_code", 'market_name',
-            "cov_columns", "kpi_column", "feature_importance", "spend_cols"
+            "df", "kpi_df", "audience_column", "client_columns", "market_code", 'market_name',
+            "date_granularity", "cov_columns", "kpi_column", "feature_importance", "spend_cols"
         ]
     )
 
@@ -60,11 +60,13 @@ def render_power_analysis():
         ):
             mm2 = MatchedMarketScoring(
                 df=df,
+                kpi_df=kpi_df,
                 audience_columns=audience_columns,
                 client_columns=client_columns,
                 display_columns=[market_code, market_name],
                 covariate_columns=cov_columns,
                 market_column=market_code,
+                date_granularity=date_granularity,
                 kpi_column=kpi_column,
                 feature_importance=feature_importance,
                 scoring_removed_columns=spend_cols,
@@ -80,19 +82,12 @@ def render_power_analysis():
                 run_model=False
             )
 
-            st.dataframe(mm2.power_analysis_results.get('All Results'))
-
-            # with st.expander(f"**Minimum Budget Testing Framework**", expanded=True):
-            #     st.dataframe(
-            #         mm2.power_analysis_results.get('Minimum Budget'),
-            #         use_container_width=False, hide_index=True
-            #     )
-            #
-            # if len(mm2.power_analysis_results.get('In Budget')) > 0:
-            #     with st.expander(f"**In Budget Testing Framework**", expanded=True):
-            #         st.dataframe(
-            #             mm2.power_analysis_results.get('In Budget'),
-            #             use_container_width=False, hide_index=True
-            #         )
-            # else:
-            #     st.error("No In Budget Testing Frameworks", icon="🚨")
+            # Display options
+            if len(mm2.power_analysis_results.get('By Duration')) > 0:
+                st.dataframe(
+                    mm2.power_analysis_results.get('By Duration'),
+                    hide_index=True,
+                    use_container_width=True
+                )
+            else:
+                st.error("No feasible solution found. Considering increasing the budget.", icon="🚨")

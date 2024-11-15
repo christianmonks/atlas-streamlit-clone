@@ -1,11 +1,8 @@
-import json
 import streamlit as st
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 import plotly.express as px
 from scripts.constants import *
-import streamlit_vertical_slider as svs
-from scripts.matched_market import MatchedMarketScoring
 
 
 def render_matched_markets():
@@ -75,8 +72,8 @@ def render_matched_markets():
         num_pairs = st.number_input(
             "**Number of Market Pairs**",
             min_value=1,
-            max_value=10,
-            value=5 if len(specific_markets) == 0 else len(specific_markets),
+            max_value=1000,
+            value=10 if len(specific_markets) == 0 else len(specific_markets),
             help="Specify the number of test and control market pairs to generate.",
         )
 
@@ -149,6 +146,10 @@ def render_matched_markets():
 
     st.write("")
     st.write("")
+
+    # store for power analysis
+    st.session_state['matched_markets'] = matched_df
+
     # If there are selected tiers, show the analysis
     if len(tier_filter) > 0:
         with st.expander("**Matched Markets Analysis**", expanded=False):
@@ -185,8 +186,6 @@ def render_matched_markets():
                 )
 
             with col3:
-                
-
                 # Merge KPI data for comparison
                 kpi_comp = kpi_df.merge(df[[market_code, TIER]], on=market_code)
 

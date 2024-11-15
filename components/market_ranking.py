@@ -1,6 +1,5 @@
 import json
 import streamlit as st
-import pandas as pd
 import plotly.express as px
 from scripts.constants import *
 import streamlit_vertical_slider as svs
@@ -14,10 +13,10 @@ def render_market_ranking():
 
     # Extract required session state values
     mm, audience_columns, kpi_column, market_level, client_columns, \
-    cov_columns, market_code, market_name, spend_cols, df = (
+    cov_columns, market_code, market_name, spend_cols, df, kpi_df, date_granularity = (
         st.session_state[key] for key in [
             "mm", "audience_column", "kpi_column", "market_level", 'client_columns',
-            "cov_columns", "market_code", "market_name", "spend_cols", "df"
+            "cov_columns", "market_code", "market_name", "spend_cols", "df", "kpi_df", "date_granularity"
         ]
     )
 
@@ -97,12 +96,14 @@ def render_market_ranking():
     # Create a new instance of MatchedMarketScoring with updated parameters
     mm1 = MatchedMarketScoring(
         df=df,
+        kpi_df=kpi_df,
         audience_columns=audience_columns,
         client_columns=client_columns,
         display_columns=[market_code, market_name],
         covariate_columns=cov_columns,
         market_column=market_code,
-        kpi_column = kpi_column,
+        date_granularity=date_granularity,
+        kpi_column=kpi_column,
         run_model=False,
         feature_importance=feature_importance,
         scoring_removed_columns=spend_cols

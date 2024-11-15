@@ -326,12 +326,14 @@ def render_command_center():
                 spend_cols = [c for c in list(df) if 'spend' in c.lower()]
                 mm = MatchedMarketScoring(
                     df=df,
-                    client_columns= client_columns,
-                    audience_columns= [audience_filter],
+                    kpi_df=kpi_df,
+                    client_columns=client_columns,
+                    audience_columns=[audience_filter],
                     display_columns=[MARKET_COLUMN, column_market_name],
                     covariate_columns=cov_columns,
                     kpi_column = kpi_column,
                     market_column=MARKET_COLUMN,
+                    date_granularity=date_column_granularity,
                     scoring_removed_columns=spend_cols
                 )
 
@@ -345,6 +347,7 @@ def render_command_center():
                 'kpi_column': kpi_column,
                 'market_level': column_market_name,
                 'cov_columns': cov_columns,
+                'date_granularity': date_column_granularity,
                 'market_code': MARKET_COLUMN,
                 'market_name': column_market_name,
                 'spend_cols': spend_cols,

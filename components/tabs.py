@@ -51,7 +51,7 @@ def render_tabs():
             render_matched_markets()
         else:
             st.error("Please Return to the Previous Tab and Upload Audience and KPI Data", icon="🚨")
-    with  tab5:
+    with tab5:
         if 'mm' in st.session_state:
             render_power_analysis()
         else:

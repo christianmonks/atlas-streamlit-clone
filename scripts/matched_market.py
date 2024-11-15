@@ -1,6 +1,7 @@
-import copy
 import numpy as np
 import pandas as pd
+import math
+import streamlit as st
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
@@ -12,12 +13,14 @@ class MatchedMarketScoring:
     def __init__(
         self,
         df: pd.DataFrame,
+        kpi_df: pd.DataFrame,
         client_columns: list,
         audience_columns: list,
         covariate_columns: list,
         kpi_column: str,
         display_columns: list = [DMA_CODE, DMA_NAME],
         market_column: str = DMA_CODE,
+        date_granularity = 'Daily',
         target_variable: str = TIER,
         scoring_removed_columns: list = [],
         power_analysis_parameters: dict = {
@@ -35,12 +38,14 @@ class MatchedMarketScoring:
         """
         Initialize the MatchedMarketScoring class.
 
-        :param df: DataFrame containing the data.
+        :param df: DataFrame containing the aggregated data.
+        :param kpi_df: DataFrame containing the raw data.
         :param client_columns: List of columns representing client-specific features.
         :param audience_columns: List of columns representing audience features.
         :param covariate_columns: List of columns representing covariates or control variables.
         :param display_columns: List of columns to display in the output (default: [DMA_CODE, DMA_NAME]).
         :param market_column: Column used to define the market (default: DMA_CODE).
+        :param date_granularity: Date granularity for KPI (default: Daily).
         :param target_variable: Name of the target variable column (default: TIER).
         :param scoring_removed_columns: List of columns to exclude from scoring.
         :param power_analysis_parameters: Dictionary containing parameters for power analysis (alpha, power, lifts).
@@ -51,6 +56,7 @@ class MatchedMarketScoring:
 
         # Create a deep copy of the input DataFrame
         self.df = df.copy(deep=True)
+        self.kpi_df = kpi_df.copy(deep=True)
 
         # Store input parameters
         self.target_variable = target_variable
@@ -59,7 +65,7 @@ class MatchedMarketScoring:
         self.audience_columns = audience_columns
         self.client_columns = client_columns
         self.market_column = market_column
-
+        self.date_granularity = date_granularity
         self.kpi_column = kpi_column
 
         # Combine model-related columns and filter them by what exists in the DataFrame
@@ -101,7 +107,7 @@ class MatchedMarketScoring:
                 print(f'-------- {k}: ${v} --------')
 
             self.power_analysis_parameters = power_analysis_parameters
-            self.power_analysis_parameters['Lifts'] = [x / 100 for x in self.power_analysis_parameters['Lifts']]
+            # self.power_analysis_parameters['Lifts'] = [x / 100 for x in self.power_analysis_parameters['Lifts']]
             for k, v in self.power_analysis_parameters.items():
                 print(f"-------- Power Analysis Parameter {k}: {v}  --------")
             self.power_analysis_results = self.power_analysis()
@@ -245,11 +251,18 @@ class MatchedMarketScoring:
         """
 
         # Extract the relevant data (Market and KPI column) from the dataframe
-        kpi_data = self.df[['Market', self.kpi_column]]
+        kpi_data = self.kpi_df[['Market', self.kpi_column]]
+
+        # Extract power analysis input: budget limit and cpik
+        budget_limit = self.power_analysis_inputs.get('Budget')
+        cpik = self.power_analysis_inputs.get('Cost')
 
         # Extract the list of similar markets (Test Market and Control Market pairs)
-        markets = self.similar_markets[['Test Market Identifier', 'Control Market Identifier']]
+        matched_markets = st.session_state['matched_markets']
+        markets = matched_markets[['Test Market Identifier', 'Control Market Identifier']]
         l_markets = markets.values.tolist()
+        test_market = matched_markets['Test Market Identifier'].values.tolist()
+        control_market = matched_markets['Control Market Identifier'].values.tolist()
 
         testing_markets, results = [], []
         # Iterate over each market pair
@@ -288,34 +301,38 @@ class MatchedMarketScoring:
                 )
 
                 # Calculate the required budget based on sample size, KPI mean, and lift
-                budget = obs * kpi_mean * min_lift_percentage * self.power_analysis_inputs.get('Cost')
+                budget = obs * kpi_mean * min_lift_percentage * cpik
 
                 # Estimate the running time in weeks (proportional to sample size)
-                running_time_weeks = round(2 * obs / len(geo_input))
+                running_time = 2 * obs / len(geo_input)
 
                 # Append the results for the current lift to the results list
-                results.append({
-                    'Lift': f"{lift}",  # Lift as a percentage
-                    'Number of Markets': len(geo_input),  # Total number of markets included
-                    'Budget': budget,  # Estimated budget
-                    'Running Time (weeks)': running_time_weeks,  # Estimated running time
-                    'Geo List': ','.join(map(str, geo_input))  # List of geographies (markets)
-                })
+                # Date granularity can be Daily or Weekly
+                if self.date_granularity == 'Weekly':
+                    results.append({
+                        'Number of Test Markets': int(len(geo_input) / 2),
+                        'Budget': int(budget),
+                        'Running Time (Weeks)': math.ceil(running_time),
+                        'Test Markets': ','.join(map(str, [x for x in geo_input if x in test_market])),
+                        'Control Markets': ','.join(map(str, [x for x in geo_input if x in control_market]))
+                    })
+                elif self.date_granularity == 'Daily':
+                    results.append({
+                        'Number of Test Markets': int(len(geo_input) / 2),
+                        'Budget': int(budget),
+                        'Running Time (Weeks)': math.ceil(running_time / 7),
+                        'Test Markets': ','.join(map(str, [x for x in geo_input if x in test_market])),
+                        'Control Markets': ','.join(map(str, [x for x in geo_input if x in control_market]))
+                    })
 
         # Convert the results list into a pandas DataFrame
         df_results = pd.DataFrame(results)
-
-        min_budget_value = df_results.Budget.min()
-        min_budget_row = df_results[df_results.Budget == min_budget_value]
-
-        budget_row = df_results[
-            (df_results['Budget'] < self.power_analysis_inputs.get('Budget'))
-        ].sort_values(by=['Running Time (weeks)'])
+        filtered_rows = df_results[(df_results['Budget'] < budget_limit)] \
+            .sort_values(by=['Running Time (Weeks)', 'Budget'])
 
         result_dict = {
             'All Results': df_results,
-            'Minimum Budget': min_budget_row,
-            'In Budget': budget_row
+            'By Duration': filtered_rows,
         }
         return result_dict
 
