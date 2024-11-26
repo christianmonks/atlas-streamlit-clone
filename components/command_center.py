@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
 import os
+import regex as re
 from os.path import join
 from pandas.api.types import is_numeric_dtype
 from scripts.constants import *
@@ -30,7 +31,7 @@ def render_command_center():
         column_market_name = market_level.split()[-1].lower().capitalize()
 
     # Expander for Target data selection
-    with st.expander(label="**Target Audience**", expanded=False):
+    with st.expander(label="**Target Audience**", expanded=True):
 
         if market_level == 'Select a Market Level':
             st.error("Please Return to the Previous Expander and select a Market Level", icon="🚨")
@@ -40,85 +41,38 @@ def render_command_center():
             audience_path = join(cd, 'data', 'audience', audience_file)
             complete_audience_df = pd.read_csv(audience_path)
 
-            # Create common buckets based on the existing columns in the DataFrame
-            def sum_columns(df, new_col_name, col_groups):
-                # Define a function to sum specified columns
-                df[new_col_name] = df[col_groups].sum(axis=1)
+            # Crea listas para las columnas
+            order = ['Females', 'Males', 'Population']
 
-            # Population aged 18 and over: sum specified columns
-            columns_to_sum = complete_audience_df.filter(regex=r'^total_.*(?:[1-9]\d{1,}|[2-9]\d|1[89])$')
+            # Obtener las columnas que comienzan con 'F', 'M' y 'P' y que tienen un número
+            f_columns = [col for col in complete_audience_df.columns if re.match(r'^F\d', col)]
 
-            complete_audience_df['P18+'] = columns_to_sum.sum(axis=1)
+            m_columns = [col for col in complete_audience_df.columns if re.match(r'^M\d', col)]
 
-            # Male population aged 18 and over: sum specified columns
-            columns_male_18_to_sum = complete_audience_df.filter(regex=r'^male_.*(?:[1-9]\d{1,}|[2-9]\d|1[89])$')
+            p_columns = [col for col in complete_audience_df.columns if re.match(r'^P\d', col)]
 
-            complete_audience_df['M18+'] = columns_male_18_to_sum.sum(axis=1)
-
-            # # Female population aged 18 and over: sum specified columns
-            columns_female_18_to_sum = complete_audience_df.filter(regex=r'^female_.*(?:[1-9]\d{1,}|[2-9]\d|1[89])$')
-
-            complete_audience_df['F18+'] = columns_female_18_to_sum.sum(axis=1)
-
-            # # Population aged 18-49: sum specified columns
-            columns_to_sum_18_49 = complete_audience_df.filter(regex=r'^total_(1[89]|[2-9]\d)_[0-4]?\d$')
-
-            complete_audience_df['P18-49'] = columns_to_sum_18_49.sum(axis=1)
-
-            # Male population aged 18-49: sum specified columns
-            columns_male_to_sum_18_49 = complete_audience_df.filter(regex=r'^male_(1[89]|[2-9]\d)_[0-4]?\d$')
-
-            complete_audience_df['M18-49'] = columns_male_to_sum_18_49.sum(axis=1)
-
-            # Female population aged 18-49: sum specified columns
-            columns_male_to_sum_18_49 = complete_audience_df.filter(regex=r'^female_(1[89]|[2-9]\d)_[0-4]?\d$')
-
-            complete_audience_df['F18-49'] = columns_male_to_sum_18_49.sum(axis=1)
-
-            # Replace underscores in all column names and convert to title case
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('_', '-').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('Female-', 'F').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('Male-', 'M').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('-Total', 's').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('Total-', 'P').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('To-', '').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('-And-Over', '+').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('Universe', 'Population').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('under-5', '5-').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('Mtotal', 'Males').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('Ftotal', 'Females').str.title()
-
-            # Add the names of the new common bucket columns to audience_columns
-            audience_columns = list(complete_audience_df.columns)
-            audience_columns = [col for col in audience_columns if col != MARKET_COLUMN and col != column_market_name]
-            audience_columns.extend(audience_columns)  
-
-            # Convert audience options to title case
-            audience_columns = [option.title() for option in audience_columns]
-            audience_columns = list(set(audience_columns))
-
-            # desired_order = [
-            #     'Population', 'P5-', 'P5-9', 'P10-17', 'P18-34', 'P18+', 'P35-49', 'P18-49', 'P50-64', 'P65+',
-            #     'Females', 'F5-', 'F5-9', 'F10-17', 'F18-34', 'F18+', 'F35-49', 'F18-49', 'F50-64', 'F65+',
-            #     'Males', 'M5-', 'M5-9', 'M10-17', 'M18-34', 'M18+', 'M35-49', 'M18-49', 'M50-64', 'M65+'
-    
-            # ]
-
-            #order_dict = {value: index for index, value in enumerate(desired_order)}
-            #audience_columns_sorted = sorted(audience_columns, key=lambda x: order_dict.get(x, float('inf')))
+            # Reorganizar DataFrame según el nuevo orden
+            audience_columns = order + f_columns + m_columns + p_columns
             default = "Population"
 
-            # Change from multiselect to select-box for single selection
-            audience_filter = st.selectbox(
-                label="**Select the Primary Audience for the Campaign**",  # Changed to singular
+            #select-box to multiselect for multiple selection
+            audience_filter = st.multiselect(
+                label="**Select the Audiences for the Campaign**",  # Changed to plural
                 options=audience_columns,
-                index=audience_columns.index(default) if default in audience_columns else 0,
-                help="Select an audience demographic. Default set as population of the market.",
-                key="audience_selection"  # Add a key to manage state if needed
+                default=[default] if default in audience_columns else [],  # Set the default value
+                help="Select up to 3 audience demographics. You can select 1, 2, or 3.",  # Updated help message
+                key="audience_selection"  # Keep the key to manage state if needed
             )
 
-            # Generate a filtered DataFrame
-            audience_df = complete_audience_df[[MARKET_COLUMN] + [audience_filter]]
+            # Check if more than 3 audiences have been selected
+            if len(audience_filter) > 3:
+                st.warning("You can select a maximum of 3 audiences.")  # Warning for exceeding the limit
+            else:
+                # Generate a filtered DataFrame only if 1 to 3 audiences are selected
+                if len(audience_filter) > 0:
+                    audience_df = complete_audience_df[[MARKET_COLUMN] + audience_filter]  # Create filtered DataFrame
+                else:
+                    st.warning("Please select at least 1 audience.")  # Prompt user if no audience is selected
 
            
     # Expander for Data Upload
@@ -282,7 +236,7 @@ def render_command_center():
             # Final list of columns for analysis
             client_columns = client_columns  if client_columns is not None else []
             client_columns = [col for col in client_columns if col != MARKET_COLUMN]
-            final_columns = [MARKET_COLUMN, column_market_name] + client_columns + [audience_filter] + included_cov  + [kpi_column, TIER] 
+            final_columns = [MARKET_COLUMN, column_market_name] + client_columns + audience_filter + included_cov  + [kpi_column, TIER] 
             df = df[final_columns]
 
             if st.checkbox("View Merged KPI, Audiences and Market Data"):
