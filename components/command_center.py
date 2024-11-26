@@ -16,7 +16,7 @@ def render_command_center():
     # Initialize empty dataframes
 
     cd = os.getcwd()
-    kpi_df, client_df, agg_kpi_df, audience_df = None, None, None, None
+    kpi_df, client_df, agg_kpi_df, audience_df, df = None, None, None, None, None
     client_columns, audience_columns = [], []
 
     # Expander for Market Level Selection
@@ -56,7 +56,7 @@ def render_command_center():
             default = "Population"
 
             #select-box to multiselect for multiple selection
-            audience_filter = st.multiselect(
+            audience_seletion = st.multiselect(
                 label="**Select the Audiences for the Campaign**",  # Changed to plural
                 options=audience_columns,
                 default=[default] if default in audience_columns else [],  # Set the default value
@@ -64,15 +64,17 @@ def render_command_center():
                 key="audience_selection"  # Keep the key to manage state if needed
             )
 
+            audience_filter = None
+
             # Check if more than 3 audiences have been selected
-            if len(audience_filter) > 3:
+            if len(audience_seletion) > 3:
                 st.warning("You can select a maximum of 3 audiences.")  # Warning for exceeding the limit
+                audience_filter = None # set as None
             else:
                 # Generate a filtered DataFrame only if 1 to 3 audiences are selected
-                if len(audience_filter) > 0:
+                if len(audience_seletion) > 0 and len(audience_seletion) < 4:
+                    audience_filter = audience_seletion.copy()
                     audience_df = complete_audience_df[[MARKET_COLUMN] + audience_filter]  # Create filtered DataFrame
-                else:
-                    st.warning("Please select at least 1 audience.")  # Prompt user if no audience is selected
 
            
     # Expander for Data Upload
@@ -109,7 +111,7 @@ def render_command_center():
                     )
                     st.dataframe(client_df, hide_index=True)
             else:
-                st.error("No Additional Client Data Uploaded", icon="🚨")
+                st.error("No Additional Client Data Uploaded (Optional)", icon="🚨")
 
     # Expander for Data Granularity
     with st.expander(label="**KPI Selection and Data Granularity**", expanded=True):
@@ -179,6 +181,8 @@ def render_command_center():
     with st.expander(label="**Incorporating Additional Data Sources**"):
         if (kpi_df is None) or (market_level is None) or (MARKET_COLUMN not in list(kpi_df)):
             st.error("Please Return to the Previous Expander and Upload Audience and KPI Data", icon="🚨")
+        elif audience_filter is None:
+            st.error("Please Return to the Target Audience Expander and select correctly the audiences, can select maximum 3 audiences.", icon="🚨")
         else:
             # Load and process additional data
             additional_data = pd.read_csv(join(cd, 'data', 'census', f'{market_level.replace(" ", "_").lower()}_data.csv'))
@@ -269,7 +273,8 @@ def render_command_center():
     # - Runs the model.
     # - Uses display_columns to assign the model results (Market and Dma/State).
 
-    if agg_kpi_df is not None:
+
+    if df is not None:
         bt_run_market_ranking = st.button(
             label="**Confirm and Run Market Ranking 🏃‍➡**"
         )
