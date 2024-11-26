@@ -46,34 +46,34 @@ def render_command_center():
                 df[new_col_name] = df[col_groups].sum(axis=1)
 
             # Population aged 18 and over: sum specified columns
-            complete_audience_df['P18+'] = (
-                complete_audience_df[['total_18_to_34', 'total_35_to_49', 'total_50_to_64', 'total_65_and_over']].sum(axis=1)
-            )
+            columns_to_sum = complete_audience_df.filter(regex=r'^total_.*(?:[1-9]\d{1,}|[2-9]\d|1[89])$')
+
+            complete_audience_df['P18+'] = columns_to_sum.sum(axis=1)
 
             # Male population aged 18 and over: sum specified columns
-            complete_audience_df['M18+'] = (
-                complete_audience_df[['male_18_to_34', 'male_35_to_49', 'male_50_to_64', 'male_65_and_over']].sum(axis=1)
-            )
+            columns_male_18_to_sum = complete_audience_df.filter(regex=r'^male_.*(?:[1-9]\d{1,}|[2-9]\d|1[89])$')
 
-            # Female population aged 18 and over: sum specified columns
-            complete_audience_df['F18+'] = (
-                complete_audience_df[['female_18_to_34', 'female_35_to_49', 'female_50_to_64', 'female_65_and_over']].sum(axis=1)
-            )
+            complete_audience_df['M18+'] = columns_male_18_to_sum.sum(axis=1)
 
-            # Population aged 18-49: sum specified columns
-            complete_audience_df['P18-49'] = (
-                complete_audience_df[['total_18_to_34', 'total_35_to_49']].sum(axis=1)
-            )
+            # # Female population aged 18 and over: sum specified columns
+            columns_female_18_to_sum = complete_audience_df.filter(regex=r'^female_.*(?:[1-9]\d{1,}|[2-9]\d|1[89])$')
+
+            complete_audience_df['F18+'] = columns_female_18_to_sum.sum(axis=1)
+
+            # # Population aged 18-49: sum specified columns
+            columns_to_sum_18_49 = complete_audience_df.filter(regex=r'^total_(1[89]|[2-9]\d)_[0-4]?\d$')
+
+            complete_audience_df['P18-49'] = columns_to_sum_18_49.sum(axis=1)
 
             # Male population aged 18-49: sum specified columns
-            complete_audience_df['M18-49'] = (
-                complete_audience_df[['male_18_to_34', 'male_35_to_49']].sum(axis=1)
-            )
+            columns_male_to_sum_18_49 = complete_audience_df.filter(regex=r'^male_(1[89]|[2-9]\d)_[0-4]?\d$')
+
+            complete_audience_df['M18-49'] = columns_male_to_sum_18_49.sum(axis=1)
 
             # Female population aged 18-49: sum specified columns
-            complete_audience_df['F18-49'] = (
-                complete_audience_df[['female_18_to_34', 'female_35_to_49']].sum(axis=1)
-            )
+            columns_male_to_sum_18_49 = complete_audience_df.filter(regex=r'^female_(1[89]|[2-9]\d)_[0-4]?\d$')
+
+            complete_audience_df['F18-49'] = columns_male_to_sum_18_49.sum(axis=1)
 
             # Replace underscores in all column names and convert to title case
             complete_audience_df.columns = complete_audience_df.columns.str.replace('_', '-').str.title()
@@ -97,22 +97,22 @@ def render_command_center():
             audience_columns = [option.title() for option in audience_columns]
             audience_columns = list(set(audience_columns))
 
-            desired_order = [
-                'Population', 'P5-', 'P5-9', 'P10-17', 'P18-34', 'P18+', 'P35-49', 'P18-49', 'P50-64', 'P65+',
-                'Females', 'F5-', 'F5-9', 'F10-17', 'F18-34', 'F18+', 'F35-49', 'F18-49', 'F50-64', 'F65+',
-                'Males', 'M5-', 'M5-9', 'M10-17', 'M18-34', 'M18+', 'M35-49', 'M18-49', 'M50-64', 'M65+'
+            # desired_order = [
+            #     'Population', 'P5-', 'P5-9', 'P10-17', 'P18-34', 'P18+', 'P35-49', 'P18-49', 'P50-64', 'P65+',
+            #     'Females', 'F5-', 'F5-9', 'F10-17', 'F18-34', 'F18+', 'F35-49', 'F18-49', 'F50-64', 'F65+',
+            #     'Males', 'M5-', 'M5-9', 'M10-17', 'M18-34', 'M18+', 'M35-49', 'M18-49', 'M50-64', 'M65+'
     
-            ]
+            # ]
 
-            order_dict = {value: index for index, value in enumerate(desired_order)}
-            audience_columns_sorted = sorted(audience_columns, key=lambda x: order_dict.get(x, float('inf')))
+            #order_dict = {value: index for index, value in enumerate(desired_order)}
+            #audience_columns_sorted = sorted(audience_columns, key=lambda x: order_dict.get(x, float('inf')))
             default = "Population"
 
             # Change from multiselect to select-box for single selection
             audience_filter = st.selectbox(
                 label="**Select the Primary Audience for the Campaign**",  # Changed to singular
-                options=audience_columns_sorted,
-                index=audience_columns_sorted.index(default) if default in audience_columns_sorted else 0,
+                options=audience_columns,
+                index=audience_columns.index(default) if default in audience_columns else 0,
                 help="Select an audience demographic. Default set as population of the market.",
                 key="audience_selection"  # Add a key to manage state if needed
             )
