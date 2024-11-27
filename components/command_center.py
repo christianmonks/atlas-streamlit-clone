@@ -39,7 +39,7 @@ def render_command_center():
             # Read audience csv by market and country
             audience_file = f"{market_level.replace(' ', '_').lower()}_audience.csv"
             audience_path = join(cd, 'data', 'audience', audience_file)
-            complete_audience_df = pd.read_csv(audience_path)
+            complete_audience_df = pd.read_csv(audience_path, dtype={MARKET_COLUMN: str})
 
             # Crea listas para las columnas
             order = ['Females', 'Males', 'Population']
@@ -86,7 +86,8 @@ def render_command_center():
             uploaded_file_kpi = st.file_uploader("**Upload Client KPI Data**")
             if uploaded_file_kpi is not None:
                 # Load and display KPI data if uploaded
-                kpi_df = pd.read_csv(uploaded_file_kpi)
+                kpi_df = pd.read_csv(uploaded_file_kpi, dtype={MARKET_COLUMN: str})
+
                 kpi_column_exists = any("kpi" in v.lower() for v in kpi_df.columns)
                 if len(kpi_df) > 0 and kpi_column_exists:
                     st.success(
@@ -104,7 +105,7 @@ def render_command_center():
             st.write("")
             uploaded_file_client = st.file_uploader("**Upload Optional Client Specific Data**")
             if uploaded_file_client is not None:
-                client_df = pd.read_csv(uploaded_file_client)
+                client_df = pd.read_csv(uploaded_file_client, dtype={MARKET_COLUMN: str})
                 if len(client_df) > 0:
                     st.success(
                         f"Successfully Loaded Client Data. Total of {len(client_df)} Records. A Snapshot Is Provided Below."
@@ -185,8 +186,9 @@ def render_command_center():
             st.error("Please Return to the Target Audience Expander and select correctly the audiences, can select maximum 3 audiences.", icon="🚨")
         else:
             # Load and process additional data
-            additional_data = pd.read_csv(join(cd, 'data', 'census', f'{market_level.replace(" ", "_").lower()}_data.csv'))
+            additional_data = pd.read_csv(join(cd, 'data', 'census', f'{market_level.replace(" ", "_").lower()}_data.csv'), dtype={MARKET_COLUMN: str})
             additional_data = additional_data.rename(columns=lambda col: rename_dict.get(col, col))
+
 
             if audience_df is not None:
                 additional_columns_exclude = audience_columns
@@ -287,7 +289,7 @@ def render_command_center():
                     df=df,
                     kpi_df=kpi_df,
                     client_columns=client_columns,
-                    audience_columns=[audience_filter],
+                    audience_columns=audience_filter,
                     display_columns=[MARKET_COLUMN, column_market_name],
                     covariate_columns=cov_columns,
                     kpi_column = kpi_column,
@@ -301,13 +303,13 @@ def render_command_center():
                 'mm': mm,
                 'df': df,
                 'kpi_df': kpi_df,
-                'audience_column': [audience_filter],
+                'audience_column': audience_filter,
                 'client_columns': client_columns,
                 'kpi_column': kpi_column,
                 'market_level': column_market_name,
                 'cov_columns': cov_columns,
                 'date_granularity': date_column_granularity,
-                'market_code': MARKET_COLUMN,
+                'market_code': str(MARKET_COLUMN),
                 'market_name': column_market_name,
                 'spend_cols': spend_cols,
                 'date_column': date_column
