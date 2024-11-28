@@ -15,7 +15,7 @@ VARIABLE_CORRELATION_THRESHOLD = 0.5
 
 #MARKET_LEVELS = [c.replace('Code','') for c in [COUNTRY_CODE, STATE_CODE, DMA_CODE]]
 MARKETS = [DMA_CODE, COUNTRY_CODE, STATE_CODE]
-MARKET_LEVELS = ["US DMA", "US State", "BR Municipality", 'MX Municipality'] #, "MX City"] # Format: country_marketType
+MARKET_LEVELS = ["US DMA", "US State", "BR Municipality", 'MX Municipality'] #, "MX City"] # Format: country marketType
 MARKET_COLUMN = 'Market'
 
 AUDIENCE_BUILDER_DATASETS = [
@@ -56,5 +56,11 @@ DEFAULT_WORLD_COLS = [
     "Employment: Services (% Of Employed)",
     "Labour Force Participation (Female/Male Pop. %)",
 ]
+DEFAULT_BR_COLS = [
+    "Average Monthly Income (Heads, All)",
+]
 
-DEFAULT_COLUMNS = {'Dma': DEFAULT_DMA_COLS, 'State': DEFAULT_STATE_COLS, 'Country': DEFAULT_WORLD_COLS}
+DEFAULT_COLUMNS = {'US_Dma': DEFAULT_DMA_COLS, 
+                   'US_State': DEFAULT_STATE_COLS, 
+                   'BR_Municipality' : DEFAULT_BR_COLS, 
+                   'Country': DEFAULT_WORLD_COLS}

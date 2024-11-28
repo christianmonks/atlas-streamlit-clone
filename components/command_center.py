@@ -28,7 +28,12 @@ def render_command_center():
             help="Choose a Market Level for Market Scoring & Market Matching"
         )
 
-        column_market_name = market_level.split()[-1].lower().capitalize()
+        country_abbreviation = market_level.split()[0].upper() # US, BR, MX
+
+        column_market_name = market_level.split()[-1].lower().capitalize() # DMA, State, Municipality 
+
+        #print(column_market_name) 
+
 
     # Expander for Target data selection
     with st.expander(label="**Target Audience**", expanded=True):
@@ -218,17 +223,30 @@ def render_command_center():
             df = df.rename(columns=cov_columns)
             cov_columns = [v for k, v in cov_columns.items()]
             cov_columns = list(set(cov_columns))
+            print(f'cov_columns: {cov_columns}')
+            print(f' kpi : {kpi_column}')
+
             # Identify high correlation covariates if KPI is numeric
             if is_numeric_dtype(kpi_df[kpi_column]):
                 corr = df[cov_columns + [kpi_column]].corr()[kpi_column].reset_index()
+                print(f'corr: {corr}')
                 corr_vars = [
                     i for i in corr[corr[kpi_column] > VARIABLE_CORRELATION_THRESHOLD]['index'].tolist() \
-                    if i != kpi_column and i != 'Universe'
+                    if i != kpi_column and i != 'Population'
                 ]
+
+                if corr_vars == []:
+                    default_columns = DEFAULT_COLUMNS.get(market_level.replace(' ', '_'))
+                    corr_vars = default_columns
+
             else:
                 # Default columns for non-numeric KPI
-                default_columns = DEFAULT_COLUMNS.get(column_market_name)
+                default_columns = DEFAULT_COLUMNS.get(market_level.replace(' ', '_'))
                 corr_vars = default_columns
+                print('corr_vars')
+                print(market_level.replace(' ', '_'))
+                print(corr_vars)
+
             
 
             # Multiselect for demographic factors
@@ -297,6 +315,10 @@ def render_command_center():
                     date_granularity=date_column_granularity,
                     scoring_removed_columns=spend_cols
                 )
+
+            print('market_level: ')
+            print(market_level)
+            print(column_market_name)
 
             # Save model outputs to session state
             saved_outputs = {
