@@ -56,11 +56,24 @@ DEFAULT_WORLD_COLS = [
     "Employment: Services (% Of Employed)",
     "Labour Force Participation (Female/Male Pop. %)",
 ]
+
 DEFAULT_BR_COLS = [
     "Average Monthly Income (Heads, All)",
+]
+
+DEFAULT_MX_COLS = [
+    "Average Household Size",
+    "Average Years Of Schooling",
+    "Economically Active Population",
+    "Housing Units With Electricity",
+    "Housing Units With Internet",
+    "Total Households",
+    "Total Housing Units",
+    "Unemployed Population",
 ]
 
 DEFAULT_COLUMNS = {'US_Dma': DEFAULT_DMA_COLS, 
                    'US_State': DEFAULT_STATE_COLS, 
                    'BR_Municipality' : DEFAULT_BR_COLS, 
+                   'MX_Municipality' : DEFAULT_MX_COLS,
                    'Country': DEFAULT_WORLD_COLS}
