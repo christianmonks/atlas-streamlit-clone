@@ -120,7 +120,7 @@ def render_market_ranking():
     st.write("")  # Empty line for spacing
 
     # If the market level is DMA, display the heat map
-    if market_level == "US DMA":
+    if market_level == "Dma":
         with st.expander("**DMA Market Score Heat Map**", expanded=True):
             with open("dma.json") as geofile:
                 source_geo = json.load(geofile)  # Load geographical data for the map

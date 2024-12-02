@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
 import os
+import regex as re
 from os.path import join
 from pandas.api.types import is_numeric_dtype
 from scripts.constants import *
@@ -15,7 +16,7 @@ def render_command_center():
     # Initialize empty dataframes
 
     cd = os.getcwd()
-    kpi_df, client_df, agg_kpi_df, audience_df = None, None, None, None
+    kpi_df, client_df, agg_kpi_df, audience_df, df = None, None, None, None, None
     client_columns, audience_columns = [], []
 
     # Expander for Market Level Selection
@@ -27,10 +28,15 @@ def render_command_center():
             help="Choose a Market Level for Market Scoring & Market Matching"
         )
 
-        column_market_name = market_level.split()[-1].lower().capitalize()
+        country_abbreviation = market_level.split()[0].upper() # US, BR, MX
+
+        column_market_name = market_level.split()[-1].lower().capitalize() # DMA, State, Municipality 
+
+        #print(column_market_name) 
+
 
     # Expander for Target data selection
-    with st.expander(label="**Target Audience**", expanded=False):
+    with st.expander(label="**Target Audience**", expanded=True):
 
         if market_level == 'Select a Market Level':
             st.error("Please Return to the Previous Expander and select a Market Level", icon="🚨")
@@ -38,87 +44,42 @@ def render_command_center():
             # Read audience csv by market and country
             audience_file = f"{market_level.replace(' ', '_').lower()}_audience.csv"
             audience_path = join(cd, 'data', 'audience', audience_file)
-            complete_audience_df = pd.read_csv(audience_path)
+            complete_audience_df = pd.read_csv(audience_path, dtype={MARKET_COLUMN: str})
 
-            # Create common buckets based on the existing columns in the DataFrame
-            def sum_columns(df, new_col_name, col_groups):
-                # Define a function to sum specified columns
-                df[new_col_name] = df[col_groups].sum(axis=1)
+            # Crea listas para las columnas
+            order = ['Females', 'Males', 'Population']
 
-            # Population aged 18 and over: sum specified columns
-            complete_audience_df['P18+'] = (
-                complete_audience_df[['total_18_to_34', 'total_35_to_49', 'total_50_to_64', 'total_65_and_over']].sum(axis=1)
-            )
+            # Obtener las columnas que comienzan con 'F', 'M' y 'P' y que tienen un número
+            f_columns = [col for col in complete_audience_df.columns if re.match(r'^F\d', col)]
 
-            # Male population aged 18 and over: sum specified columns
-            complete_audience_df['M18+'] = (
-                complete_audience_df[['male_18_to_34', 'male_35_to_49', 'male_50_to_64', 'male_65_and_over']].sum(axis=1)
-            )
+            m_columns = [col for col in complete_audience_df.columns if re.match(r'^M\d', col)]
 
-            # Female population aged 18 and over: sum specified columns
-            complete_audience_df['F18+'] = (
-                complete_audience_df[['female_18_to_34', 'female_35_to_49', 'female_50_to_64', 'female_65_and_over']].sum(axis=1)
-            )
+            p_columns = [col for col in complete_audience_df.columns if re.match(r'^P\d', col)]
 
-            # Population aged 18-49: sum specified columns
-            complete_audience_df['P18-49'] = (
-                complete_audience_df[['total_18_to_34', 'total_35_to_49']].sum(axis=1)
-            )
-
-            # Male population aged 18-49: sum specified columns
-            complete_audience_df['M18-49'] = (
-                complete_audience_df[['male_18_to_34', 'male_35_to_49']].sum(axis=1)
-            )
-
-            # Female population aged 18-49: sum specified columns
-            complete_audience_df['F18-49'] = (
-                complete_audience_df[['female_18_to_34', 'female_35_to_49']].sum(axis=1)
-            )
-
-            # Replace underscores in all column names and convert to title case
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('_', '-').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('Female-', 'F').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('Male-', 'M').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('-Total', 's').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('Total-', 'P').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('To-', '').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('-And-Over', '+').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('Universe', 'Population').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('under-5', '5-').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('Mtotal', 'Males').str.title()
-            complete_audience_df.columns = complete_audience_df.columns.str.replace('Ftotal', 'Females').str.title()
-
-            # Add the names of the new common bucket columns to audience_columns
-            audience_columns = list(complete_audience_df.columns)
-            audience_columns = [col for col in audience_columns if col != MARKET_COLUMN and col != column_market_name]
-            audience_columns.extend(audience_columns)  
-
-            # Convert audience options to title case
-            audience_columns = [option.title() for option in audience_columns]
-            audience_columns = list(set(audience_columns))
-
-            desired_order = [
-                'Population', 'P5-', 'P5-9', 'P10-17', 'P18-34', 'P18+', 'P35-49', 'P18-49', 'P50-64', 'P65+',
-                'Females', 'F5-', 'F5-9', 'F10-17', 'F18-34', 'F18+', 'F35-49', 'F18-49', 'F50-64', 'F65+',
-                'Males', 'M5-', 'M5-9', 'M10-17', 'M18-34', 'M18+', 'M35-49', 'M18-49', 'M50-64', 'M65+'
-    
-            ]
-
-            order_dict = {value: index for index, value in enumerate(desired_order)}
-            audience_columns_sorted = sorted(audience_columns, key=lambda x: order_dict.get(x, float('inf')))
+            # Reorganizar DataFrame según el nuevo orden
+            audience_columns = order + f_columns + m_columns + p_columns
             default = "Population"
 
-            # Change from multiselect to select-box for single selection
-            audience_filter = st.selectbox(
-                label="**Select the Primary Audience for the Campaign**",  # Changed to singular
-                options=audience_columns_sorted,
-                index=audience_columns_sorted.index(default) if default in audience_columns_sorted else 0,
-                help="Select an audience demographic. Default set as population of the market.",
-                key="audience_selection"  # Add a key to manage state if needed
+            #select-box to multiselect for multiple selection
+            audience_seletion = st.multiselect(
+                label="**Select the Audiences for the Campaign**",  # Changed to plural
+                options=audience_columns,
+                default=[default] if default in audience_columns else [],  # Set the default value
+                help="Select up to 3 audience demographics. You can select 1, 2, or 3.",  # Updated help message
+                key="audience_selection"  # Keep the key to manage state if needed
             )
 
-            # Generate a filtered DataFrame
-            audience_df = complete_audience_df[[MARKET_COLUMN] + [audience_filter]]
+            audience_filter = None
+
+            # Check if more than 3 audiences have been selected
+            if len(audience_seletion) > 3:
+                st.warning("You can select a maximum of 3 audiences.")  # Warning for exceeding the limit
+                audience_filter = None # set as None
+            else:
+                # Generate a filtered DataFrame only if 1 to 3 audiences are selected
+                if len(audience_seletion) > 0 and len(audience_seletion) < 4:
+                    audience_filter = audience_seletion.copy()
+                    audience_df = complete_audience_df[[MARKET_COLUMN] + audience_filter]  # Create filtered DataFrame
 
            
     # Expander for Data Upload
@@ -130,7 +91,8 @@ def render_command_center():
             uploaded_file_kpi = st.file_uploader("**Upload Client KPI Data**")
             if uploaded_file_kpi is not None:
                 # Load and display KPI data if uploaded
-                kpi_df = pd.read_csv(uploaded_file_kpi)
+                kpi_df = pd.read_csv(uploaded_file_kpi, dtype={MARKET_COLUMN: str})
+
                 kpi_column_exists = any("kpi" in v.lower() for v in kpi_df.columns)
                 if len(kpi_df) > 0 and kpi_column_exists:
                     st.success(
@@ -148,14 +110,14 @@ def render_command_center():
             st.write("")
             uploaded_file_client = st.file_uploader("**Upload Optional Client Specific Data**")
             if uploaded_file_client is not None:
-                client_df = pd.read_csv(uploaded_file_client)
+                client_df = pd.read_csv(uploaded_file_client, dtype={MARKET_COLUMN: str})
                 if len(client_df) > 0:
                     st.success(
                         f"Successfully Loaded Client Data. Total of {len(client_df)} Records. A Snapshot Is Provided Below."
                     )
                     st.dataframe(client_df, hide_index=True)
             else:
-                st.error("No Additional Client Data Uploaded", icon="🚨")
+                st.error("No Additional Client Data Uploaded (Optional)", icon="🚨")
 
     # Expander for Data Granularity
     with st.expander(label="**KPI Selection and Data Granularity**", expanded=True):
@@ -225,10 +187,13 @@ def render_command_center():
     with st.expander(label="**Incorporating Additional Data Sources**"):
         if (kpi_df is None) or (market_level is None) or (MARKET_COLUMN not in list(kpi_df)):
             st.error("Please Return to the Previous Expander and Upload Audience and KPI Data", icon="🚨")
+        elif audience_filter is None:
+            st.error("Please Return to the Target Audience Expander and select correctly the audiences, can select maximum 3 audiences.", icon="🚨")
         else:
             # Load and process additional data
-            additional_data = pd.read_csv(join(cd, 'data', 'census', f'{market_level.replace(" ", "_").lower()}_data.csv'))
+            additional_data = pd.read_csv(join(cd, 'data', 'census', f'{market_level.replace(" ", "_").lower()}_data.csv'), dtype={MARKET_COLUMN: str})
             additional_data = additional_data.rename(columns=lambda col: rename_dict.get(col, col))
+
 
             if audience_df is not None:
                 additional_columns_exclude = audience_columns
@@ -258,17 +223,30 @@ def render_command_center():
             df = df.rename(columns=cov_columns)
             cov_columns = [v for k, v in cov_columns.items()]
             cov_columns = list(set(cov_columns))
+            print(f'cov_columns: {cov_columns}')
+            print(f' kpi : {kpi_column}')
+
             # Identify high correlation covariates if KPI is numeric
             if is_numeric_dtype(kpi_df[kpi_column]):
                 corr = df[cov_columns + [kpi_column]].corr()[kpi_column].reset_index()
+                print(f'corr: {corr}')
                 corr_vars = [
                     i for i in corr[corr[kpi_column] > VARIABLE_CORRELATION_THRESHOLD]['index'].tolist() \
-                    if i != kpi_column and i != 'Universe'
+                    if i != kpi_column and i != 'Population'
                 ]
+
+                if corr_vars == []:
+                    default_columns = DEFAULT_COLUMNS.get(market_level.replace(' ', '_'))
+                    corr_vars = default_columns
+
             else:
                 # Default columns for non-numeric KPI
-                default_columns = DEFAULT_COLUMNS.get(column_market_name)
+                default_columns = DEFAULT_COLUMNS.get(market_level.replace(' ', '_'))
                 corr_vars = default_columns
+                print('corr_vars')
+                print(market_level.replace(' ', '_'))
+                print(corr_vars)
+
             
 
             # Multiselect for demographic factors
@@ -282,7 +260,7 @@ def render_command_center():
             # Final list of columns for analysis
             client_columns = client_columns  if client_columns is not None else []
             client_columns = [col for col in client_columns if col != MARKET_COLUMN]
-            final_columns = [MARKET_COLUMN, column_market_name] + client_columns + [audience_filter] + included_cov  + [kpi_column, TIER] 
+            final_columns = [MARKET_COLUMN, column_market_name] + client_columns + audience_filter + included_cov  + [kpi_column, TIER] 
             df = df[final_columns]
 
             if st.checkbox("View Merged KPI, Audiences and Market Data"):
@@ -315,7 +293,8 @@ def render_command_center():
     # - Runs the model.
     # - Uses display_columns to assign the model results (Market and Dma/State).
 
-    if agg_kpi_df is not None:
+
+    if df is not None:
         bt_run_market_ranking = st.button(
             label="**Confirm and Run Market Ranking 🏃‍➡**"
         )
@@ -328,7 +307,7 @@ def render_command_center():
                     df=df,
                     kpi_df=kpi_df,
                     client_columns=client_columns,
-                    audience_columns=[audience_filter],
+                    audience_columns=audience_filter,
                     display_columns=[MARKET_COLUMN, column_market_name],
                     covariate_columns=cov_columns,
                     kpi_column = kpi_column,
@@ -337,18 +316,22 @@ def render_command_center():
                     scoring_removed_columns=spend_cols
                 )
 
+            print('market_level: ')
+            print(market_level)
+            print(column_market_name)
+
             # Save model outputs to session state
             saved_outputs = {
                 'mm': mm,
                 'df': df,
                 'kpi_df': kpi_df,
-                'audience_column': [audience_filter],
+                'audience_column': audience_filter,
                 'client_columns': client_columns,
                 'kpi_column': kpi_column,
                 'market_level': column_market_name,
                 'cov_columns': cov_columns,
                 'date_granularity': date_column_granularity,
-                'market_code': MARKET_COLUMN,
+                'market_code': str(MARKET_COLUMN),
                 'market_name': column_market_name,
                 'spend_cols': spend_cols,
                 'date_column': date_column
