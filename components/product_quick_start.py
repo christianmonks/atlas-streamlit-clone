@@ -7,7 +7,7 @@ def render_product_quick_start():
             Follow these steps to successfully run the tool:
 
             1. Go to the 'Matched Market Command Center' tab to start.
-            2. First select the market level and country of your data.
+            2. First select the country and market level of your data.
             3. Choose your target audiences, up to three.         
             4. Ensure that your data adheres to the required schemas. You must upload client KPI data and optionally extra client specific data.
             5. Use the 'Data Uploader' to upload your files.             
