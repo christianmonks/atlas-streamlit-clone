@@ -234,7 +234,8 @@ def render_command_center():
                     i for i in corr[corr[kpi_column] > VARIABLE_CORRELATION_THRESHOLD]['index'].tolist() \
                     if i != kpi_column and i != 'Population'
                 ]
-
+                print(f'entre aca DEFAULT_COLUMNS:{corr_vars}')
+                
                 if corr_vars == []:
                     default_columns = DEFAULT_COLUMNS.get(market_level.replace(' ', '_'))
                     corr_vars = default_columns
