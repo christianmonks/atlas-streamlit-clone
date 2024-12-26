@@ -161,7 +161,7 @@ def render_matched_markets():
     if len(tier_filter) > 0:
         with st.expander("**Matched Markets Analysis**", expanded=True):
 
-            col0, col1, col2, col3, col4, col5 = st.columns([0.1, 0.8, 0.5, 0.5, 0.5, 0.1], gap="medium")
+            col0, col1, col2, col3, col4 = st.columns([0.2, 0.7, 0.7, 0.7, 0.2], gap="medium")
 
             # Merge KPI data for comparison
             kpi_comp = kpi_df.merge(df[[market_code, TIER]], on=market_code)
@@ -230,8 +230,7 @@ def render_matched_markets():
                         value_name=kpi_column,
                     )
                 )
-                # Analysis of covariance and variance
-                # Filter the data for Control and Test Markets
+                # Analysis of correlation
                 control_data = kpi_comp[kpi_comp['Market'] == 'Control Markets'][kpi_column].dropna().reset_index(drop=True)
                 test_data = kpi_comp[kpi_comp['Market'] == 'Test Markets'][kpi_column].dropna().reset_index(drop=True)
 
@@ -241,31 +240,21 @@ def render_matched_markets():
                     control_data = control_data.head(min_length)
                     test_data = test_data.head(min_length)
 
-
-                # Check if there are enough data points to calculate covariance and variance
-                if control_data.empty or test_data.empty or len(control_data) < 2 or len(test_data) < 2:
-                    st.write("Error: Not enough data to calculate covariance and variance.")
-                    
                 else:
-                    covariance_value = control_data.cov(test_data)
-                    formatted_covariance = humanize.intword(covariance_value)
                     correlation_value = control_data.corr(test_data)
                     media_control= control_data.mean()
+                    formatted_media_control = humanize.intword(media_control)
                     media_test= test_data.mean()
-                    
-                with col1:    
-                    # Metric for Covariance
-                    st.metric(label="Covariance", value=f"{formatted_covariance}")
+                    formatted_media_test = humanize.intword(media_test)
 
-                with col2:
-                    # Metric for Correlation
+                with col1:
                     st.metric(label="Correlation", value=f"{correlation_value:.2f}")
 
-                with col3:
-                    st.metric(label="Media test", value=f"{media_test:.2f}")
+                with col2:
+                    st.metric(label="Media test", value=f"{formatted_media_test}")
 
-                with col4:
-                    st.metric(label="Media control", value=f"{media_control:.2f}")    
+                with col3:
+                    st.metric(label="Media control", value=f"{formatted_media_control}")    
             
             
             col1, col3, col4 = st.columns([0.1, 1, 0.1], gap="medium")
