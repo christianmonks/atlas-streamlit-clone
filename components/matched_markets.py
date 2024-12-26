@@ -148,15 +148,20 @@ def render_matched_markets():
 
     st.write("")
     st.write("")
+    
 
-    # store for power analysis
-    st.session_state['matched_markets'] = matched_df
+    try:
+        st.session_state['matched_markets'] = matched_df
+    except UnboundLocalError:
+        # manejar el error
+        st.session_state['matched_markets'] = None  # o cualquier valor predeterminado
+        st.error("Please select tiers for identifying similar Matched Markets", icon="🚨")
 
     # If there are selected tiers, show the analysis
     if len(tier_filter) > 0:
         with st.expander("**Matched Markets Analysis**", expanded=True):
 
-            col0, col1, col2, col3, col4, col5 = st.columns([0.1, 0.5, 0.5, 0.5, 0.5, 0.1], gap="medium")
+            col0, col1, col2, col3, col4, col5 = st.columns([0.1, 0.8, 0.5, 0.5, 0.5, 0.1], gap="medium")
 
             # Merge KPI data for comparison
             kpi_comp = kpi_df.merge(df[[market_code, TIER]], on=market_code)

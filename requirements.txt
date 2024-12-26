@@ -8,4 +8,4 @@ regex
 streamlit-vertical-slider
 streamlit-toggle
 statsmodels
-
+humanize
