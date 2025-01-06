@@ -251,10 +251,10 @@ def render_matched_markets():
                     st.metric(label="Correlation", value=f"{correlation_value:.2f}")
 
                 with col2:
-                    st.metric(label="Media test", value=f"{formatted_media_test}")
+                    st.metric(label="Mean test", value=f"{formatted_media_test}")
 
                 with col3:
-                    st.metric(label="Media control", value=f"{formatted_media_control}")    
+                    st.metric(label="Mean control", value=f"{formatted_media_control}")    
             
             
             col1, col3, col4 = st.columns([0.1, 1, 0.1], gap="medium")
