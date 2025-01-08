@@ -3,7 +3,7 @@ import pandas as pd
 from pandas.api.types import is_numeric_dtype
 import plotly.express as px
 from scripts.constants import *
-import humanize
+from numerize import numerize
 
 
 
@@ -161,7 +161,7 @@ def render_matched_markets():
     if len(tier_filter) > 0:
         with st.expander("**Matched Markets Analysis**", expanded=True):
 
-            col0, col1, col2, col3, col4 = st.columns([0.2, 0.7, 0.7, 0.7, 0.2], gap="medium")
+            col0, col1, col2, col3, col4 = st.columns([0.05, 0.5, 0.5, 0.5, 0.5], gap="medium")
 
             # Merge KPI data for comparison
             kpi_comp = kpi_df.merge(df[[market_code, TIER]], on=market_code)
@@ -242,21 +242,24 @@ def render_matched_markets():
 
                 else:
                     correlation_value = control_data.corr(test_data)
-                    media_control= control_data.mean()
-                    formatted_media_control = humanize.intword(media_control)
-                    media_test= test_data.mean()
-                    formatted_media_test = humanize.intword(media_test)
+                    average_control= control_data.mean()
+                    formatted_average_control = numerize.numerize(average_control, 2)
+                    average_test= test_data.mean()
+                    formatted_average_test = numerize.numerize(average_test, 2)
 
                 with col1:
+                    st.metric(label="KPI Name", value=kpi_column)  # Mostrar el nombre de la KPI        
+            
+                with col2:
                     st.metric(label="Correlation", value=f"{correlation_value:.2f}")
 
-                with col2:
-                    st.metric(label="Mean test", value=f"{formatted_media_test}")
-
                 with col3:
-                    st.metric(label="Mean control", value=f"{formatted_media_control}")    
-            
-            
+                    st.metric(label="Average test", value=f"{formatted_average_test}")
+
+                with col4:
+                    st.metric(label="Average control", value=f"{formatted_average_control}")
+
+                
             col1, col3, col4 = st.columns([0.1, 1, 0.1], gap="medium")
 
             with col3:
