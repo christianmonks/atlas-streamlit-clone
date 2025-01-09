@@ -15,7 +15,7 @@ VARIABLE_CORRELATION_THRESHOLD = 0.5
 
 #MARKET_LEVELS = [c.replace('Code','') for c in [COUNTRY_CODE, STATE_CODE, DMA_CODE]]
 MARKETS = [DMA_CODE, COUNTRY_CODE, STATE_CODE]
-MARKET_LEVELS = ["US DMA", "US State", "BR Municipality", 'MX Municipality'] #, "MX City"] # Format: country marketType
+MARKET_LEVELS = ["US DMA", "US State", "BR Municipality", 'MX Municipality', 'Other'] #, "MX City"] # Format: country marketType
 MARKET_COLUMN = 'Market'
 
 AUDIENCE_BUILDER_DATASETS = [

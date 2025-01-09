@@ -40,6 +40,9 @@ def render_command_center():
 
         if market_level == 'Select a Market Level':
             st.error("Please Return to the Previous Expander and select a Market Level", icon="🚨")
+
+        elif market_level == 'Other':
+            st.error('This option is not available for "Other".', icon="⚠️")
         else:
             # Read audience csv by market and country
             audience_file = f"{market_level.replace(' ', '_').lower()}_audience.csv"
@@ -185,26 +188,40 @@ def render_command_center():
     
     # Expander for incorporating additional data sources
     with st.expander(label="**Incorporating Additional Data Sources**"):
+        
         if (kpi_df is None) or (market_level is None) or (MARKET_COLUMN not in list(kpi_df)):
             st.error("Please Return to the Previous Expander and Upload Audience and KPI Data", icon="🚨")
-        elif audience_filter is None:
+        elif audience_filter is None and market_level != "Other":
             st.error("Please Return to the Target Audience Expander and select correctly the audiences, can select maximum 3 audiences.", icon="🚨")
         else:
-            # Load and process additional data
-            additional_data = pd.read_csv(join(cd, 'data', 'census', f'{market_level.replace(" ", "_").lower()}_data.csv'), dtype={MARKET_COLUMN: str})
-            additional_data = additional_data.rename(columns=lambda col: rename_dict.get(col, col))
 
+            df = agg_kpi_df
 
-            if audience_df is not None:
-                additional_columns_exclude = audience_columns
-                additional_data = additional_data[[k for k in list(additional_data) if k not in additional_columns_exclude]]
+            if market_level != "Other":
+                # Load and process additional data
+                additional_data = pd.read_csv(join(cd, 'data', 'census', f'{market_level.replace(" ", "_").lower()}_data.csv'), dtype={MARKET_COLUMN: str})
+                additional_data = additional_data.rename(columns=lambda col: rename_dict.get(col, col))
+
+                if audience_df is not None:
+                    additional_columns_exclude = audience_columns
+                    additional_data = additional_data[[k for k in list(additional_data) if k not in additional_columns_exclude]]
 
             # Start with the list of dataframes
+            
+                dfs_to_merge = [additional_data, client_df, audience_df]
+
+                filter_columns_cov =  [MARKET_COLUMN, column_market_name, TIER, kpi_column, 'Percent Rank']
+
+            else: 
+                dfs_to_merge = [client_df]
+                filter_columns_cov = [MARKET_COLUMN, TIER, kpi_column, 'Percent Rank']
+                cols_additional_data = list(df.columns) - [kpi_column]
+                additional_data = df[cols_additional_data]
+
             # Filter out None or empty dataframes
             # Perform merging if there are any valid dataframes
-            dfs_to_merge = [additional_data, client_df, audience_df]
             dfs_to_merge = [df for df in dfs_to_merge if df is not None]
-            df = agg_kpi_df
+
             print(df.columns)
             for additional_df in dfs_to_merge:
                 print(additional_df.columns)
@@ -217,7 +234,7 @@ def render_command_center():
             columns_to_drop = null_percentage[null_percentage > 10].index
             df = df.drop(columns=columns_to_drop)
 
-            cov_columns = [c for c in additional_data if c not in [MARKET_COLUMN, column_market_name, TIER, kpi_column, 'Percent Rank'] ]
+            cov_columns = [c for c in additional_data if c not in filter_columns_cov ]
             cov_columns = {c: c.title().replace("_", " ") for c in cov_columns}
 
             df = df.rename(columns=cov_columns)
@@ -234,7 +251,8 @@ def render_command_center():
                     i for i in corr[corr[kpi_column] > VARIABLE_CORRELATION_THRESHOLD]['index'].tolist() \
                     if i != kpi_column and i != 'Population'
                 ]
-
+                print(f'entre aca DEFAULT_COLUMNS:{corr_vars}')
+                
                 if corr_vars == []:
                     default_columns = DEFAULT_COLUMNS.get(market_level.replace(' ', '_'))
                     corr_vars = default_columns
@@ -247,7 +265,6 @@ def render_command_center():
                 print(market_level.replace(' ', '_'))
                 print(corr_vars)
 
-            
 
             # Multiselect for demographic factors
             included_cov = st.multiselect(
