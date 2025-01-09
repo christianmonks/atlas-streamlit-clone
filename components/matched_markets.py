@@ -251,13 +251,13 @@ def render_matched_markets():
                     st.metric(label="KPI Name", value=kpi_column)  # Mostrar el nombre de la KPI        
             
                 with col2:
-                    st.metric(label="Correlation", value=f"{correlation_value:.2f}")
+                    st.metric(label="Correlation: Test vs Control", value=f"{correlation_value:.2f}")
 
                 with col3:
-                    st.metric(label="Average test", value=f"{formatted_average_test}")
+                    st.metric(label="Test Average", value=f"{formatted_average_test}")
 
                 with col4:
-                    st.metric(label="Average control", value=f"{formatted_average_control}")
+                    st.metric(label="Control Average", value=f"{formatted_average_control}")
 
                 
             col1, col3, col4 = st.columns([0.1, 1, 0.1], gap="medium")
