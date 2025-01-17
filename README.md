@@ -11,4 +11,4 @@ Internally, the audience datasets must have the following column names:
 - *Females*: for the female population
 - *Males*: for the male population
 
-For disaggregation, the first letter should be in lowercase followed by numbers or intervals, for example: *P18+* or *M20-24*.
+For disaggregation, the first letter should be in upper case followed by numbers or intervals, for example: *P18+* or *M20-24*.
