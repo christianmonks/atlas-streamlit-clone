@@ -270,7 +270,6 @@ def render_matched_markets():
             with col3:
                 # If date columns are present, create a line plot
                 if date_column is not None:
-                    print(f'kpi_comp: {kpi_comp}')
                     kpi_comp[date_column] = pd.to_datetime(kpi_comp[date_column])
                     kpi_comp = kpi_comp.sort_values(by=date_column, ascending=False)
                     kpi_comp = kpi_comp.rename(
@@ -283,7 +282,7 @@ def render_matched_markets():
                         y=kpi_column,
                         color="Market",
                         color_discrete_map=color_mapping,
-                        title="Historical KPI Volume: Control vs Test Markets",
+                        title="Historical KPI Volume: Test vs Control Markets",
                     )
                     fig_comp.update_layout(width=800, height=500)
                     st.plotly_chart(fig_comp, theme="streamlit", use_container_width=True)
