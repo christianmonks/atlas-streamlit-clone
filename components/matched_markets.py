@@ -262,39 +262,44 @@ def render_matched_markets():
                 
             col1, col3, col4 = st.columns([0.1, 1, 0.1], gap="medium")
 
+            color_mapping = {
+                'Control Markets': 'blue',
+                'Test Markets': 'red'
+            }
+
             with col3:
+                # If date columns are present, create a line plot
+                if date_column is not None:
+                    kpi_comp[date_column] = pd.to_datetime(kpi_comp[date_column])
+                    kpi_comp = kpi_comp.sort_values(by=date_column, ascending=False)
+                    kpi_comp = kpi_comp.rename(
+                        columns={date_column: date_column.title()}
+                    )
                     
-                    # If date columns are present, create a line plot
-                    if date_column is not None:
-                        kpi_comp[date_column] = pd.to_datetime(kpi_comp[date_column])
-                        kpi_comp = kpi_comp.sort_values(by=date_column, ascending=False)
-                        kpi_comp = kpi_comp.rename(
-                            columns={date_column: date_column.title()}
-                        )
-                        fig_comp = px.line(
+                    fig_comp = px.line(
+                        kpi_comp,
+                        x=date_column.title(),
+                        y=kpi_column,
+                        color="Market",
+                        color_discrete_map=color_mapping,
+                        title="Historical KPI Volume: Test vs Control Markets",
+                    )
+                    fig_comp.update_layout(width=800, height=500)
+                    st.plotly_chart(fig_comp, theme="streamlit", use_container_width=True)
+                else:
+                    fig_comp = (
+                        px.bar(
                             kpi_comp,
-                            x=date_column.title(),
+                            x="Market",
                             y=kpi_column,
                             color="Market",
-                            color_discrete_sequence=["blue", "red"],
-                            title="Historical KPI Volume: Control vs Test Markets",
+                            color_discrete_map=color_mapping, 
+                            title=f"Historical {kpi_column} Volume: Control vs Test Markets",
                         )
-                        fig_comp.update_layout(width=800, height=500)
-                        st.plotly_chart(fig_comp, theme="streamlit", use_container_width=True)
-                    else:
-                        fig_comp = (
-                            px.bar(
-                                kpi_comp,
-                                x="Market",
-                                y=kpi_column,
-                                color="Market",
-                                color_discrete_sequence=["blue", "red"],
-                                title=f"Historical {kpi_column} Volume: Control vs Test Markets",
-                            )
-                            .update_traces(marker_line_width=0)
-                            .update_layout(xaxis_showgrid=False, yaxis_showgrid=False)
-                        )
-                        fig_comp.update_layout(width=800, height=500)
-                        st.plotly_chart(fig_comp, theme="streamlit", use_container_width=True)
+                        .update_traces(marker_line_width=0)
+                        .update_layout(xaxis_showgrid=False, yaxis_showgrid=False)
+                    )
+                    fig_comp.update_layout(width=800, height=500)
+                    st.plotly_chart(fig_comp, theme="streamlit", use_container_width=True)
 
                    
