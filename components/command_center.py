@@ -49,10 +49,10 @@ def render_command_center():
             audience_path = join(cd, 'data', 'audience', audience_file)
             complete_audience_df = pd.read_csv(audience_path, dtype={MARKET_COLUMN: str})
 
-            # Crea listas para las columnas
-            order = ['Females', 'Males', 'Population']
+            
+            order = ['Females', 'Males', 'Population', 'Females Baby Boomers','Males Baby Boomers','Population Baby Boomers','Females Millennials','Males Millennials','Population Millennials','Females Generation Z','Males Generation Z','Population Generation Z']
 
-            # Obtener las columnas que comienzan con 'F', 'M' y 'P' y que tienen un número
+            
             f_columns = [col for col in complete_audience_df.columns if re.match(r'^F\d', col)]
 
             m_columns = [col for col in complete_audience_df.columns if re.match(r'^M\d', col)]
