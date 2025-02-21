@@ -253,7 +253,7 @@ def render_command_center():
                 ]
                 print(f'entre aca DEFAULT_COLUMNS:{corr_vars}')
                 
-                if corr_vars == []:
+                if corr_vars == [] or len(corr_vars) > MAX_DEFAULT:
                     default_columns = DEFAULT_COLUMNS.get(market_level.replace(' ', '_'))
                     corr_vars = default_columns
 
