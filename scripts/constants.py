@@ -12,7 +12,7 @@ COUNTRY_NAME = "Country Name"
 STATE_CODE = "State Code"
 STATE_NAME = "State Name"
 VARIABLE_CORRELATION_THRESHOLD = 0.5
-MAX_DEFAULT = 5
+MAX_DEFAULT = 9
 
 #MARKET_LEVELS = [c.replace('Code','') for c in [COUNTRY_CODE, STATE_CODE, DMA_CODE]]
 MARKETS = [DMA_CODE, COUNTRY_CODE, STATE_CODE]
@@ -25,7 +25,7 @@ AUDIENCE_BUILDER_DATASETS = [
 ]
 
 DEFAULT_DMA_COLS = [
-  "GDP",
+  "Gdp",
   "Median Household Income",
   "In Labor Force", 
   "Broadband Any Source", 
@@ -36,7 +36,7 @@ DEFAULT_DMA_COLS = [
 ]
 
 DEFAULT_STATE_COLS = [
- 'GDP',
+ 'Gdp',
  'Median Household Income',
  'Per Capita Income',
  'Median Housing Value',
